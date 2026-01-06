@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+  <dict>
+    <key>Label</key>
+    <string>com.launchpad.ha</string>
+
+    <key>ProgramArguments</key>
+    <array>
+      <string>/Users/marcostevanon/.local/launchpad-ha/venv/bin/python</string>
+      <string>-m</string>
+      <string>src.ha_launchpad.cli</string>
+    </array>
+
+    <key>WorkingDirectory</key>
+    <string>/Users/marcostevanon/.local/launchpad-ha</string>
+
+    <key>RunAtLoad</key>
+    <true/>
+
+    <key>KeepAlive</key>
+    <true/>
+
+    <key>InheritedNetworking</key>
+    <true/>
+
+    <key>StandardOutPath</key>
+    <string>/tmp/ha-launchpad.out.log</string>
+
+    <key>StandardErrorPath</key>
+    <string>/tmp/ha-launchpad.err.log</string>
+
+    <key>GroupName</key>
+    <string>staff</string>
+
+    <key>Debug</key>
+    <false/>
+  </dict>
+</plist>
