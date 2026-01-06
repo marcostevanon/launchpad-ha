@@ -8,6 +8,7 @@ import logging
 from .config import (
     HA_REQUEST_RETRY_DELAY,
     HA_REQUEST_MAX_DELAY,
+    VOLUME_STEP,
 )
 
 logger = logging.getLogger(__name__)
@@ -91,3 +92,26 @@ class HomeAssistantAPI:
         else:
             logger.error("Unknown domain: %s", domain)
             return False
+
+    def volume_up(self, entity_id: str) -> bool:
+        """Increase volume of a media player by VOLUME_STEP."""
+        return self._adjust_volume(entity_id, VOLUME_STEP)
+
+    def volume_down(self, entity_id: str) -> bool:
+        """Decrease volume of a media player by VOLUME_STEP."""
+        return self._adjust_volume(entity_id, -VOLUME_STEP)
+
+    def _adjust_volume(self, entity_id: str, delta: float) -> bool:
+        """Adjust volume by delta, clamped to 0.0-1.0."""
+        state = self.get_state(entity_id)
+        if "error" in state:
+            logger.error("Cannot get state for volume adjustment: %s", entity_id)
+            return False
+
+        current_volume = state.get("attributes", {}).get("volume_level")
+        if current_volume is None:
+            logger.error("Volume level not available for %s", entity_id)
+            return False
+
+        new_volume = max(0.0, min(1.0, current_volume + delta))
+        return self.call_service("media_player", "volume_set", entity_id, volume_level=new_volume)

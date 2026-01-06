@@ -25,6 +25,8 @@ HA_CONNECT_MAX_DELAY = float(os.getenv("HA_CONNECT_MAX_DELAY", "30.0"))
 HA_REQUEST_RETRY_DELAY = float(os.getenv("HA_REQUEST_RETRY_DELAY", "2.0"))
 HA_REQUEST_MAX_DELAY = float(os.getenv("HA_REQUEST_MAX_DELAY", "5.0"))
 
+VOLUME_STEP = float(os.getenv("VOLUME_STEP", "0.1"))
+
 LAUNCHPAD_ALIVE_DELAY = float(os.getenv("LAUNCHPAD_ALIVE_DELAY", "3.0"))
 LAUNCHPAD_RETRY_DELAY = float(os.getenv("LAUNCHPAD_RETRY_DELAY", "5.0"))
 LAUNCHPAD_MAX_RETRY_DELAY = float(os.getenv("LAUNCHPAD_MAX_RETRY_DELAY", "10.0"))
@@ -57,8 +59,8 @@ BUTTON_MAP: Dict[int, str] = {
     77: "scene.living_room_1",
     # media
     55: "media_player.living_room_sonos",
-    # 56: "media_player_volume_up.living_room_sonos",
-    # 57: "media_player_volume_down.living_room_sonos",
+    56: "volume_down.media_player.living_room_sonos",
+    57: "volume_up.media_player.living_room_sonos",
     # 45: "media_player.studio_speaker",
     # todo Tv!
 }

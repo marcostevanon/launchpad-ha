@@ -97,6 +97,12 @@ class LaunchpadController:
             return
 
         for note, entity_id in self.button_map.items():
+            # Handle volume actions separately
+            if entity_id.startswith("volume_up.") or entity_id.startswith("volume_down."):
+                color = "purple_1"  # Fixed color for volume buttons
+                self.send_note(note, color, 0)
+                continue
+
             state_data = self.ha_api.get_state(entity_id)
 
             if not state_data:
@@ -190,17 +196,35 @@ class LaunchpadController:
 
         entity_id = self.button_map[note]
 
-        # Skip toggle if entity was not found in Home Assistant
-        if entity_id in self._unknown_entities:
+        # Handle volume actions
+        if entity_id.startswith("volume_up."):
+            action = "volume_up"
+            target_entity = entity_id[10:]  # Remove "volume_up."
+        elif entity_id.startswith("volume_down."):
+            action = "volume_down"
+            target_entity = entity_id[12:]  # Remove "volume_down."
+        else:
+            action = None
+            target_entity = entity_id
+
+        # Skip if entity was not found in Home Assistant
+        if target_entity in self._unknown_entities:
             logger.warning(
-                "Cannot toggle %s - entity not found in Home Assistant", entity_id
+                "Cannot %s %s - entity not found in Home Assistant",
+                action or "toggle",
+                target_entity,
             )
             return
 
-        logger.info("Button %s pressed -> %s", note, entity_id)
+        logger.info("Button %s pressed -> %s %s", note, action or "toggle", target_entity)
 
         self.send_note(note=note, color="yellow_1", channel=2)
-        success = self.ha_api.toggle_entity(entity_id)
+        if action == "volume_up":
+            success = self.ha_api.volume_up(target_entity)
+        elif action == "volume_down":
+            success = self.ha_api.volume_down(target_entity)
+        else:
+            success = self.ha_api.toggle_entity(target_entity)
         if success:
             self.send_note(note=note, color="yellow_1", channel=2)
 
