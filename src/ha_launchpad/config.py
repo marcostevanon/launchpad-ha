@@ -76,6 +76,10 @@ BUTTON_MAP: Dict[int, str] = {
     45: "media_player.nestmini7849",
     46: "volume_down.media_player.nestmini7849",
     47: "volume_up.media_player.nestmini7849",
+
+    # plants
+    11: "plant.monstera",
+    12: "plant.pothos",
 }
 
 # Pads that should enter color-pick mode when pressed (keys from BUTTON_MAP)

@@ -167,6 +167,14 @@ class LaunchpadController:
                         color = "off"
                     else:
                         color = "amber_1"  # off state for other media players
+            elif domain == "plant":
+                problem = state_data.get("attributes", {}).get("problem", "unknown")
+                if problem == "none":
+                    color = "green_3"
+                    channel = 0
+                else:
+                    color = "red_2"
+                    channel = 2
             else:
                 # unknown domain
                 self._unknown_entities.add(entity_id)
@@ -240,6 +248,10 @@ class LaunchpadController:
         elif entity_id.startswith("volume_down."):
             target = entity_id.split(".", 1)[1]
             self.adjust_volume(target, -1)
+            return
+
+        # Skip toggle for plants (sensors)
+        if entity_id.startswith("plant."):
             return
 
         # For regular entities, action is toggle
