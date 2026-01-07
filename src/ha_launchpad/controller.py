@@ -112,7 +112,7 @@ class LaunchpadController:
                     color = random.choice(disco_button_colors)
                     channel = 2
                 else:
-                    color = "purple_1"
+                    color = "orange_1"
                     channel = 0
                 self.send_note(note, color, channel)
                 continue
