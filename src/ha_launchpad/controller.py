@@ -118,10 +118,10 @@ class LaunchpadController:
                 continue
             elif entity_id.startswith("volume_up.") or entity_id.startswith("volume_down."):
                 target_entity = entity_id.split(".", 1)[1]
-                # For Google Home devices, only show volume buttons when playing
+                # For Google Home devices, show volume buttons when playing or paused
                 if "nestmini" in target_entity or "studio_speaker" in target_entity:
                     target_state = self.ha_api.get_state(target_entity)
-                    if target_state and target_state.get("state") == "playing":
+                    if target_state and target_state.get("state") in ["playing", "paused"]:
                         color = "purple_1"
                     else:
                         color = "off"
@@ -159,9 +159,11 @@ class LaunchpadController:
                 if state == "playing":
                     color = "cyan_0"
                     channel = 2
+                elif state == "paused":
+                    color = "amber_1"  # paused state
                 else:
-                    # For Google Home devices and TVs, show LED off when not playing
-                    if "nestmini" in entity_id or "studio_speaker" in entity_id or "tv" in entity_id:
+                    # For Google Home devices, show LED off when off/idle
+                    if "nestmini" in entity_id or "studio_speaker" in entity_id:
                         color = "off"
                     else:
                         color = "amber_1"  # off state for other media players
