@@ -65,17 +65,17 @@ BUTTON_MAP: Dict[int, str] = {
     78: "disco_toggle",
 
     # media
-    45: "media_player.living_room_sonos",
-    46: "volume_down.media_player.living_room_sonos",
-    47: "volume_up.media_player.living_room_sonos",
+    65: "media_player.living_room_sonos",
+    66: "volume_down.media_player.living_room_sonos",
+    67: "volume_up.media_player.living_room_sonos",
 
-    35: "media_player.studio_speaker",
-    36: "volume_down.media_player.studio_speaker",
-    37: "volume_up.media_player.studio_speaker",
+    55: "media_player.studio_speaker",
+    56: "volume_down.media_player.studio_speaker",
+    57: "volume_up.media_player.studio_speaker",
 
-    25: "media_player.nestmini7849",
-    26: "volume_down.media_player.nestmini7849",
-    27: "volume_up.media_player.nestmini7849",
+    45: "media_player.nestmini7849",
+    46: "volume_down.media_player.nestmini7849",
+    47: "volume_up.media_player.nestmini7849",
 }
 
 # Pads that should enter color-pick mode when pressed (keys from BUTTON_MAP)
