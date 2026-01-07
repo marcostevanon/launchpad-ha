@@ -4,11 +4,14 @@ from typing import Dict, Any, Optional
 import time
 import threading
 import logging
+import random
 
 from src.ha_launchpad.utils.rotate_pad import inverse_rotation, rotate_pad
 from .config import (
     COLOR_PICK_ENABLED,
     COLOR_PALETTE,
+    DISCO_LIGHTS,
+    DISCO_SPEED,
     LAUNCHPAD_ALIVE_DELAY,
     LAUNCHPAD_MAX_RETRY_DELAY,
     LAUNCHPAD_RETRY_DELAY,
@@ -36,6 +39,8 @@ class LaunchpadController:
         self.color_pick_mode = False
         self.color_pick_target = None
         self.color_pick_note = None
+        self.disco_mode = False
+        self.disco_thread = None
         self._press_times: Dict[int, float] = {}
         self._palette_selected_notes = set()
         self._unknown_entities = set()
@@ -97,8 +102,15 @@ class LaunchpadController:
             return
 
         for note, entity_id in self.button_map.items():
-            # Handle volume actions separately
-            if entity_id.startswith("volume_up.") or entity_id.startswith("volume_down."):
+            if self.disco_mode and entity_id in DISCO_LIGHTS:
+                continue  # Skip disco lights when disco mode is active
+
+            # Handle special entities
+            if entity_id == "disco_toggle":
+                color = "red_1" if self.disco_mode else "off"
+                self.send_note(note, color, 0)
+                continue
+            elif entity_id.startswith("volume_up.") or entity_id.startswith("volume_down."):
                 color = "purple_1"  # Fixed color for volume buttons
                 self.send_note(note, color, 0)
                 continue
@@ -196,19 +208,21 @@ class LaunchpadController:
 
         entity_id = self.button_map[note]
 
-        # Handle volume actions
-        if entity_id.startswith("volume_up."):
-            action = "volume_up"
-            target_entity = entity_id[10:]  # Remove "volume_up."
+        # Handle special actions
+        if entity_id == "disco_toggle":
+            self.toggle_disco_mode()
+            return
+        elif entity_id.startswith("volume_up."):
+            target = entity_id.split(".", 1)[1]
+            self.adjust_volume(target, 1)
+            return
         elif entity_id.startswith("volume_down."):
-            action = "volume_down"
-            target_entity = entity_id[12:]  # Remove "volume_down."
-        else:
-            action = None
-            target_entity = entity_id
+            target = entity_id.split(".", 1)[1]
+            self.adjust_volume(target, -1)
+            return
 
-        # Skip if entity was not found in Home Assistant
-        if target_entity in self._unknown_entities:
+        # Skip toggle if entity was not found in Home Assistant
+        if entity_id in self._unknown_entities:
             logger.warning(
                 "Cannot %s %s - entity not found in Home Assistant",
                 action or "toggle",
@@ -262,6 +276,57 @@ class LaunchpadController:
                 self.send_note(note, "off")
             except Exception:
                 pass
+
+    def toggle_disco_mode(self):
+        """Toggle disco mode on/off"""
+        if self.disco_mode:
+            self.disco_mode = False
+            if self.disco_thread and self.disco_thread.is_alive():
+                self.disco_thread.join()
+            self.disco_thread = None
+            logger.info("Disco mode disabled")
+            # Refresh LED states
+            self.update_led_states()
+        else:
+            self.disco_mode = True
+            self.disco_thread = threading.Thread(target=self.disco_thread_func, daemon=True)
+            self.disco_thread.start()
+            logger.info("Disco mode enabled")
+
+    def disco_thread_func(self):
+        """Disco effect thread"""
+        disco_colors = [
+            (255, 0, 0),    # red
+            (0, 255, 0),    # green
+            (0, 0, 255),    # blue
+            (255, 255, 0),  # yellow
+            (255, 0, 255),  # magenta
+            (0, 255, 255),  # cyan
+            (255, 255, 255),# white
+            (255, 128, 0),  # orange
+            (128, 0, 255),  # purple
+        ]
+        while self.disco_mode and self.running:
+            for light in DISCO_LIGHTS:
+                # Pick a random color for each light
+                color = random.choice(disco_colors)
+                # Decide to turn on or off randomly
+                if random.random() < 0.8:  # 80% chance to turn on
+                    self.ha_api.call_service("light", "turn_on", light, rgb_color=color)
+                else:
+                    self.ha_api.call_service("light", "turn_off", light)
+            time.sleep(DISCO_SPEED)
+
+    def adjust_volume(self, target: str, direction: int):
+        """Adjust volume up/down"""
+        from .config import VOLUME_STEP
+        # Get current volume
+        state = self.ha_api.get_state(target)
+        if not state or "attributes" not in state:
+            return
+        current_vol = state["attributes"].get("volume_level", 0.5)
+        new_vol = max(0.0, min(1.0, current_vol + direction * VOLUME_STEP))
+        self.ha_api.call_service("media_player", "volume_set", target, volume_level=new_vol)
 
     def state_polling_thread(self):
         """Background thread to poll HA states and update LEDs"""

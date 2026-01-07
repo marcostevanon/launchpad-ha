@@ -7,6 +7,7 @@ A utility that connects a Novation Launchpad to Home Assistant. Button presses t
 - Bidirectional control: Launchpad buttons control Home Assistant entities, and entity states update Launchpad LEDs
 - Configurable button mapping to any Home Assistant entity (lights, switches, scenes, media players)
 - Color picker mode for RGB lights
+- Disco mode for automated light shows on configured spotlights
 - Launchpad rotation support (0°, 90°, 180°, 270°)
 - Automatic reconnection to Launchpad and Home Assistant
 

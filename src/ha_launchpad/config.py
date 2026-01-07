@@ -36,6 +36,9 @@ LAUNCHPAD_ROTATION = int(os.getenv("LAUNCHPAD_ROTATION", "180"))
 if LAUNCHPAD_ROTATION not in {0, 90, 180, 270}:
     raise ValueError("LAUNCHPAD_ROTATION must be 0, 90, 180 or 270")
 
+DISCO_LIGHTS = ["light.bulb_1", "light.bulb_2", "light.bulb_3"]
+DISCO_SPEED = float(os.getenv("DISCO_SPEED", "0.5"))
+
 # Launchpad button mapping (pad number -> HA entity)
 BUTTON_MAP: Dict[int, str] = {
     # living room
@@ -59,8 +62,9 @@ BUTTON_MAP: Dict[int, str] = {
     77: "scene.living_room_1",
     # media
     55: "media_player.living_room_sonos",
-    56: "volume_down.media_player.living_room_sonos",
-    57: "volume_up.media_player.living_room_sonos",
+    56: "volume_up.media_player.living_room_sonos",
+    57: "volume_down.media_player.living_room_sonos",
+    45: "disco_toggle",
     # 45: "media_player.studio_speaker",
     # todo Tv!
 }

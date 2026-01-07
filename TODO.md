@@ -16,7 +16,10 @@
 
 # extra
 - volume up and down buttons
-- disco mode
+- ~~disco mode~~
+
+# tech debt
+- separate: button configuration, button color implementation, and button action handling
 
 
 # Completed
