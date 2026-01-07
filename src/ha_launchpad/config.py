@@ -43,16 +43,16 @@ DISCO_SPEED = float(os.getenv("DISCO_SPEED", "0.5"))
 BUTTON_MAP: Dict[int, str] = {
     # living room
     81: "light.living_room_spotlights",
-    82: "switch.living_room_bulbs_string",
-    83: "light.living_room_lamp",
-    84: "switch.living_room_neon",
-    71: "light.bulb_1",
-    61: "light.bulb_2",
-    51: "light.bulb_3",
+    82: "light.bulb_1",
+    83: "light.bulb_2",
+    84: "light.bulb_3",
+    71: "switch.living_room_bulbs_string",
+    72: "light.living_room_lamp",
+    73: "switch.living_room_neon",
 
     # bedroom
-    64: "light.bulb_bedroom",
-    54: "light.bedroom_lamp",
+    61: "light.bulb_bedroom",
+    62: "light.bedroom_lamp",
 
     # scenes
     85: "scene.i_m_home",
