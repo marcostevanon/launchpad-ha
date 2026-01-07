@@ -62,8 +62,8 @@ BUTTON_MAP: Dict[int, str] = {
     77: "scene.living_room_1",
     # media
     55: "media_player.living_room_sonos",
-    56: "volume_up.media_player.living_room_sonos",
-    57: "volume_down.media_player.living_room_sonos",
+    56: "volume_down.media_player.living_room_sonos",
+    57: "volume_up.media_player.living_room_sonos",
     45: "disco_toggle",
     # 45: "media_player.studio_speaker",
     # todo Tv!
