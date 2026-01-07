@@ -107,11 +107,26 @@ class LaunchpadController:
 
             # Handle special entities
             if entity_id == "disco_toggle":
-                color = "red_1" if self.disco_mode else "off"
-                self.send_note(note, color, 0)
+                if self.disco_mode:
+                    disco_button_colors = ["orange_1", "green_1", "cyan_1", "pink_2", "yellow_1"]
+                    color = random.choice(disco_button_colors)
+                    channel = 2
+                else:
+                    color = "purple_1"
+                    channel = 0
+                self.send_note(note, color, channel)
                 continue
             elif entity_id.startswith("volume_up.") or entity_id.startswith("volume_down."):
-                color = "purple_1"  # Fixed color for volume buttons
+                target_entity = entity_id.split(".", 1)[1]
+                # For Google Home devices, only show volume buttons when playing
+                if "nestmini" in target_entity or "studio_speaker" in target_entity:
+                    target_state = self.ha_api.get_state(target_entity)
+                    if target_state and target_state.get("state") == "playing":
+                        color = "purple_1"
+                    else:
+                        color = "off"
+                else:
+                    color = "purple_1"
                 self.send_note(note, color, 0)
                 continue
 
@@ -145,7 +160,11 @@ class LaunchpadController:
                     color = "cyan_0"
                     channel = 2
                 else:
-                    color = "amber_1"  # off state
+                    # For Google Home devices and TVs, show LED off when not playing
+                    if "nestmini" in entity_id or "studio_speaker" in entity_id or "tv" in entity_id:
+                        color = "off"
+                    else:
+                        color = "amber_1"  # off state for other media players
             else:
                 # unknown domain
                 self._unknown_entities.add(entity_id)
@@ -221,24 +240,23 @@ class LaunchpadController:
             self.adjust_volume(target, -1)
             return
 
+        # For regular entities, action is toggle
+        action = "toggle"
+        target_entity = entity_id
+
         # Skip toggle if entity was not found in Home Assistant
-        if entity_id in self._unknown_entities:
+        if target_entity in self._unknown_entities:
             logger.warning(
                 "Cannot %s %s - entity not found in Home Assistant",
-                action or "toggle",
+                action,
                 target_entity,
             )
             return
 
-        logger.info("Button %s pressed -> %s %s", note, action or "toggle", target_entity)
+        logger.info("Button %s pressed -> %s %s", note, action, target_entity)
 
         self.send_note(note=note, color="yellow_1", channel=2)
-        if action == "volume_up":
-            success = self.ha_api.volume_up(target_entity)
-        elif action == "volume_down":
-            success = self.ha_api.volume_down(target_entity)
-        else:
-            success = self.ha_api.toggle_entity(target_entity)
+        success = self.ha_api.toggle_entity(target_entity)
         if success:
             self.send_note(note=note, color="yellow_1", channel=2)
 
@@ -312,21 +330,17 @@ class LaunchpadController:
                 color = random.choice(disco_colors)
                 # Decide to turn on or off randomly
                 if random.random() < 0.8:  # 80% chance to turn on
-                    self.ha_api.call_service("light", "turn_on", light, rgb_color=color)
+                    self.ha_api.call_service("light", "turn_on", light, rgb_color=color, brightness=255)
                 else:
                     self.ha_api.call_service("light", "turn_off", light)
             time.sleep(DISCO_SPEED)
 
     def adjust_volume(self, target: str, direction: int):
         """Adjust volume up/down"""
-        from .config import VOLUME_STEP
-        # Get current volume
-        state = self.ha_api.get_state(target)
-        if not state or "attributes" not in state:
-            return
-        current_vol = state["attributes"].get("volume_level", 0.5)
-        new_vol = max(0.0, min(1.0, current_vol + direction * VOLUME_STEP))
-        self.ha_api.call_service("media_player", "volume_set", target, volume_level=new_vol)
+        if direction > 0:
+            self.ha_api.volume_up(target)
+        else:
+            self.ha_api.volume_down(target)
 
     def state_polling_thread(self):
         """Background thread to poll HA states and update LEDs"""
