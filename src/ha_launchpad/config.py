@@ -83,7 +83,7 @@ BUTTON_MAP: Dict[int, str] = {
 }
 
 # Pads that should enter color-pick mode when pressed (keys from BUTTON_MAP)
-COLOR_PICK_ENABLED = {54, 81, 71, 61, 51}
+COLOR_PICK_ENABLED = {81, 82, 83, 84, 62}
 
 # Palette display mapping: map pad -> color name in `COLORS` for non-RGB devices.
 # Use these for lighting pads when RGB SysEx isn't available.
