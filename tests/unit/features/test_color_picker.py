@@ -1,6 +1,7 @@
 import pytest
 from unittest.mock import MagicMock
 from src.ha_launchpad.features.color_picker import ColorPicker
+from src.ha_launchpad.config.mapping import BRIGHTNESS_PALETTE
 
 @pytest.fixture
 def color_picker():
@@ -27,8 +28,26 @@ def test_exit_mode(color_picker):
     assert not color_picker.active
     assert color_picker.target_entity is None
     
-    # Should turn off palette
-    color_picker.backend.send_note.assert_any_call(41, 'off') # checking one palette note
+    # Should turn off palettes
+    color_picker.backend.send_note.assert_any_call(41, 'off') # color note
+    color_picker.backend.send_note.assert_any_call(21, 'off') # brightness note
+
+def test_handle_input_brightness_pick(color_picker):
+    color_picker.enter("light.test", 81)
+    
+    # Reset mocks
+    color_picker.ha_client.reset_mock()
+    
+    # Press brightness note (e.g. 21 is 0.1)
+    res = color_picker.handle_input(21)
+    
+    assert res == 81
+    assert not color_picker.active
+    
+    # Should call turn_on with brightness
+    color_picker.ha_client.call_service.assert_called_with(
+        "light", "turn_on", "light.test", brightness=int(0.1 * 255)
+    )
 
 def test_handle_input_source_note_toggle(color_picker):
     color_picker.enter("light.test", 81)

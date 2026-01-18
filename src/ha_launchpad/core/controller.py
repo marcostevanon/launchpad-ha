@@ -14,7 +14,7 @@ from src.ha_launchpad.config.settings import (
     POLL_INTERVAL,
     DISCO_LIGHTS
 )
-from src.ha_launchpad.config.mapping import COLOR_PICK_ENABLED
+from src.ha_launchpad.config.mapping import COLOR_PICK_ENABLED, BRIGHTNESS_ENABLED
 from src.ha_launchpad.infrastructure.midi.interface import MidiBackend
 from src.ha_launchpad.infrastructure.midi.mido_backend import MidoBackend
 from src.ha_launchpad.infrastructure.midi.rotated_backend import RotatedBackend
@@ -254,18 +254,22 @@ class LaunchpadController:
         # record press time
         self._press_times[note] = time.time()
 
-        # Check for Long Press / Color Pick trigger
-        # We trigger immediately for now as per original logic, 
-        # but original logic had a complex state machine for release vs hold.
-        # Original: "If this pad supports color-picking, show the palette immediately."
-        
-        if note in COLOR_PICK_ENABLED and note in self.button_map:
-            try:
-                entity_id = self.button_map.get(note)
-                if entity_id:
-                    self.color_picker.enter(entity_id, note)
-            except Exception:
-                logger.debug("enter_color_pick_mode failed", exc_info=True)
+        if note in self.button_map:
+            show_colors = note in COLOR_PICK_ENABLED
+            show_brightness = note in BRIGHTNESS_ENABLED
+            
+            if show_colors or show_brightness:
+                try:
+                    entity_id = self.button_map.get(note)
+                    if entity_id:
+                        self.color_picker.enter(
+                            entity_id, 
+                            note, 
+                            show_colors=show_colors, 
+                            show_brightness=show_brightness
+                        )
+                except Exception:
+                    logger.debug("enter_color_pick_mode failed", exc_info=True)
 
     def _handle_note_off(self, note: int):
         """Handle MIDI note-off (button release)."""

@@ -46,6 +46,22 @@ BUTTON_MAP: Dict[int, str] = {
 # Pads that should enter color-pick mode when pressed (keys from BUTTON_MAP)
 COLOR_PICK_ENABLED: Set[int] = {81, 82, 83, 84, 62}
 
+# Pads that should show brightness control (keys from BUTTON_MAP)
+BRIGHTNESS_ENABLED: Set[int] = {81, 82, 83, 84, 72, 61, 62}
+
+# Mapping: pad -> brightness level (0.0 to 1.0)
+# These will be shown on row 2 (21-28)
+BRIGHTNESS_PALETTE: Dict[int, float] = {
+    21: 0.1,
+    22: 0.25,
+    23: 0.4,
+    24: 0.55,
+    11: 0.7,
+    12: 0.85,
+    13: 0.95,
+    14: 1.0,
+}
+
 # Palette display mapping: map pad -> color name in `COLORS` for non-RGB devices.
 # Use these for lighting pads when RGB SysEx isn't available.
 COLOR_PALETTE: Dict[int, Dict[str, Any]] = {
