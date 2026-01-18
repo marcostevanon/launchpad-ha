@@ -41,7 +41,9 @@ def test_handle_input_brightness_pick(color_picker):
     # Press brightness note (e.g. 21 is 0.1)
     res = color_picker.handle_input(21)
     
-    assert res == 81
+    assert isinstance(res, dict)
+    assert res["source_note"] == 81
+    assert res["pulse_color"] == "white"
     assert not color_picker.active
     
     # Should call turn_on with brightness
@@ -58,7 +60,9 @@ def test_handle_input_source_note_toggle(color_picker):
     # Press source note -> should toggle
     res = color_picker.handle_input(81)
     
-    assert res is None # Signals handled but no selection to suppress off
+    assert isinstance(res, dict)
+    assert res["source_note"] == 81
+    assert res["pulse_color"] is None
     assert not color_picker.active
     color_picker.ha_client.toggle_entity.assert_called_with("light.test")
 
@@ -71,7 +75,9 @@ def test_handle_input_palette_pick(color_picker):
     # Press palette note (e.g. 41 is red_1)
     res = color_picker.handle_input(41)
     
-    assert res == 81 # Signals selection on 81
+    assert isinstance(res, dict)
+    assert res["source_note"] == 81
+    assert res["pulse_color"] is not None
     assert not color_picker.active
     
     # Should call turn_on with rgb

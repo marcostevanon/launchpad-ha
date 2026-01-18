@@ -1,5 +1,5 @@
 import logging
-from typing import Optional, Set
+from typing import Optional, Set, Any
 
 from src.ha_launchpad.config.mapping import COLOR_PALETTE, BRIGHTNESS_PALETTE
 
@@ -59,17 +59,11 @@ class ColorPicker:
                 except Exception:
                     pass
 
-    def handle_input(self, note: int) -> Optional[int]:
+    def handle_input(self, note: int) -> Optional[Any]:
         """
         Handle input while in color pick mode.
-        Returns the source_note if a palette color was picked, 
-        otherwise returns None if the input was handled (consumed), 
-        and raises an exception/returns specific value if not handled? 
-        Actually, let's stick to returning source_note if 'consumed and selected',
-        True if 'consumed but not selected', and False if 'not handled'.
-        Wait, let's keep it simple: return the source_note and a flag.
-        
-        Better: return True if handled, and modify a state to indicate selection.
+        Returns a dict with selection info if a pick happened, 
+        otherwise returns a dummy value if handled, or None if not.
         """
         if not self.active:
             return None
@@ -86,8 +80,10 @@ class ColorPicker:
                     self.ha_client.toggle_entity(self.target_entity)
                 except Exception:
                     pass
+            consumed_source_note = self.source_note
             self.exit()
-            return None # Not a "selection" that suppresses future off-handling
+            # Return selection info with None color to signal "no pulse"
+            return {"source_note": consumed_source_note, "pulse_color": None}
 
         # If press is on palette -> pick color
         if note in COLOR_PALETTE and self.target_entity:
@@ -103,8 +99,9 @@ class ColorPicker:
                 pass
             
             consumed_source_note = self.source_note
+            pulse_color = COLOR_PALETTE.get(note, {}).get("color", "white")
             self.exit()
-            return consumed_source_note
+            return {"source_note": consumed_source_note, "pulse_color": pulse_color}
 
         # If press is on brightness palette -> adjust brightness
         if note in BRIGHTNESS_PALETTE and self.target_entity:
@@ -122,7 +119,7 @@ class ColorPicker:
             
             consumed_source_note = self.source_note
             self.exit()
-            return consumed_source_note
+            return {"source_note": consumed_source_note, "pulse_color": "white"}
 
         # Ignore other buttons while in this mode (return something that signals handled)
         return -1 # Magic value for "handled but ignore"

@@ -185,19 +185,30 @@ class LaunchpadController:
         if self.color_picker.active:
             res = self.color_picker.handle_input(note)
             if res is not None:
-                if res != -1:
-                    # A selection happened, mark the source note as consumed
-                    self._palette_selected_notes.add(res)
-                
-                if not self.color_picker.active:
-                    # Visual feedback: Flash the chosen button
-                    # (Unless it was the source note itself exiting)
-                    if res is not None and res != -1 and note != res:
-                        self.send_note(note, "white", channel=2)
-                        time.sleep(0.2)
+                if isinstance(res, dict):
+                    source_note = res.get("source_note")
+                    pulse_color = res.get("pulse_color")
                     
-                    # Mode exited, restore LEDs
-                    self.update_led_states()
+                    if source_note:
+                        self._palette_selected_notes.add(source_note)
+                    
+                    if not self.color_picker.active:
+                        # Visual feedback: Flash/Pulse
+                        if source_note and pulse_color:
+                             # Pulse the SOURCE note as requested by user
+                             self.send_note(source_note, pulse_color, channel=2)
+                             
+                             # If we clicked away from source, turn off the palette button
+                             if note != source_note:
+                                 self.send_note(note, "off")
+                                 
+                             time.sleep(0.4)
+                        
+                        # Mode exited, restore LEDs
+                        self.update_led_states()
+                elif res == -1:
+                    pass # Handled but ignore
+                
                 return True # Input Handled
             return False # Not handled
 
