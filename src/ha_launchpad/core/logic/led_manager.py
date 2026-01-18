@@ -58,6 +58,10 @@ class LEDManager:
         self._last_state = current_state
         return changes_detected, has_notifications
 
+    def invalidate_cache(self):
+        """Force next update to resend all states."""
+        self._last_state = {}
+
     def _determine_color(self, entity_id: str):
         """Determine the color and channel for a given entity."""
         # Special cases

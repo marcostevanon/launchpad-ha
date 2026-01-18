@@ -110,6 +110,9 @@ class LaunchpadController:
         # UNLESS force is True (waking up)
         dry_run = is_idle and not force
         
+        if force:
+            self.led_manager.invalidate_cache()
+            
         changed, has_notif = self.led_manager.update_all(dry_run=dry_run)
         
         if is_idle:
