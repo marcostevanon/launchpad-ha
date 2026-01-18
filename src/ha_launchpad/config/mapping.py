@@ -48,7 +48,7 @@ BUTTON_MAP: Dict[int, str] = {
 
 # Special Buttons
 IDLE_MODE_BUTTON_ID = 68
-RESTART_CHORD = (16, 17) # First button then second button
+RESTART_CHORD = (15, 16) # First button then second button
 
 # Pads that should enter color-pick mode when pressed (keys from BUTTON_MAP)
 COLOR_PICK_ENABLED: Set[int] = {81, 82, 83, 84, 62}
