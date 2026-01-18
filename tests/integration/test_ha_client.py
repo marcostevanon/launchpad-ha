@@ -37,3 +37,14 @@ def test_volume_up(ha_client):
         
         success = ha_client.volume_up("media_player.test")
         assert success
+
+def test_get_all_states(ha_client):
+    with requests_mock.Mocker() as m:
+        m.get("http://test.local/api/states", json=[
+            {"entity_id": "light.test", "state": "on"},
+            {"entity_id": "switch.test", "state": "off"}
+        ])
+        
+        states = ha_client.get_all_states()
+        assert len(states) == 2
+        assert states[0]["entity_id"] == "light.test"

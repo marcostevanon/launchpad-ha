@@ -64,6 +64,19 @@ class HomeAssistantClient:
         logger.info("Called %s.%s for %s", domain, service, entity_id)
         return True
 
+    def get_all_states(self) -> list[Dict[str, Any]]:
+        """Fetch all entity states from Home Assistant in one call."""
+        endpoint = f"{self.url}/api/states"
+        resp = self._request_with_retry("GET", endpoint)
+        if resp is None:
+            return []
+            
+        try:
+            return resp.json()
+        except ValueError:
+            logger.error("Invalid JSON response from /api/states")
+            return []
+
     def get_state(self, entity_id: str) -> Dict[str, Any]:
         """Get the state of an entity. Returns 'not_found' if entity doesn't exist."""
         endpoint = f"{self.url}/api/states/{entity_id}"

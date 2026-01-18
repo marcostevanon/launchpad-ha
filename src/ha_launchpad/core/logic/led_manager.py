@@ -34,11 +34,15 @@ class LEDManager:
         has_notifications = False
         current_state = {}
 
+        # Fetch all states in one call
+        all_states = self.ha_client.get_all_states()
+        state_map = {s['entity_id']: s for s in all_states}
+
         for note, entity_id in self.button_map.items():
             if self.disco.active and entity_id in DISCO_LIGHTS:
                 continue
 
-            color, channel = self._determine_color(entity_id)
+            color, channel = self._determine_color(entity_id, state_map)
             
             # Check for notification condition (Plant problem = red pulse/color)
             if channel == 2 and "plant." in entity_id: 
@@ -62,7 +66,7 @@ class LEDManager:
         """Force next update to resend all states."""
         self._last_state = {}
 
-    def _determine_color(self, entity_id: str):
+    def _determine_color(self, entity_id: str, state_map: Dict[str, Any]):
         """Determine the color and channel for a given entity."""
         # Special cases
         if entity_id == "disco_toggle":
@@ -76,10 +80,10 @@ class LEDManager:
             return "lightblue_0", 0
         
         if entity_id.startswith("volume_up.") or entity_id.startswith("volume_down."):
-            return self._get_volume_button_color(entity_id)
+            return self._get_volume_button_color(entity_id, state_map)
 
         # Standard entities
-        state_data = self.ha_client.get_state(entity_id)
+        state_data = state_map.get(entity_id)
         if not state_data:
             return "red_2", 0 # Default/Unknown
 
@@ -115,10 +119,10 @@ class LEDManager:
         self._unknown_entities.add(entity_id)
         return "red_2", 0
 
-    def _get_volume_button_color(self, entity_id: str):
+    def _get_volume_button_color(self, entity_id: str, state_map: Dict[str, Any]):
         target = entity_id.split(".", 1)[1]
         if "nestmini" in target or "studio_speaker" in target:
-            state = self.ha_client.get_state(target)
+            state = state_map.get(target)
             if state and state.get("state") in ["playing", "paused"]:
                 return "purple_1", 0
             return "off", 0
