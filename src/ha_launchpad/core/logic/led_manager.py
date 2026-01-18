@@ -1,6 +1,6 @@
 import logging
 import random
-from typing import Dict, Set
+from typing import Dict, Set, Any
 
 from src.ha_launchpad.config.settings import DISCO_LIGHTS
 from src.ha_launchpad.infrastructure.midi.interface import MidiBackend
