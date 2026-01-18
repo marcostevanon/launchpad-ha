@@ -24,7 +24,7 @@ class ColorPicker:
         # Visual feedback: mark the source pad
         try:
             if self.backend and self.backend.is_connected():
-                self.backend.send_note(self.source_note, "amber_1", channel=2)
+                self.backend.send_note(self.source_note, "yellow_3", channel=2)
                 
                 # Show color palette if enabled
                 if show_colors:
@@ -34,7 +34,7 @@ class ColorPicker:
                 # Show brightness palette if enabled
                 if show_brightness:
                     for note in BRIGHTNESS_PALETTE.keys():
-                        self.backend.send_note(note, "white")
+                        self.backend.send_note(note, "yellow_3")
         except Exception as e:
             logger.warning("Error entering color pick mode: %s", e)
 
@@ -103,16 +103,6 @@ class ColorPicker:
                 pass
             
             consumed_source_note = self.source_note
-            
-            # Provide visual feedback on the source pad
-            try:
-                if self.backend and self.backend.is_connected():
-                    color = COLOR_PALETTE.get(note, {"color": "white"})["color"]
-                    if self.source_note is not None:
-                        self.backend.send_note(self.source_note, color, channel=2)
-            except Exception:
-                pass
-                
             self.exit()
             return consumed_source_note
 
@@ -131,18 +121,6 @@ class ColorPicker:
                 pass
             
             consumed_source_note = self.source_note
-            
-            # Provide visual feedback
-            try:
-                if self.backend and self.backend.is_connected():
-                    # Flash the button
-                    self.backend.send_note(note, "yellow_3", channel=2)
-                    if self.source_note is not None:
-                         # Update source note to reflect "adjusting"
-                         self.backend.send_note(self.source_note, "yellow_3")
-            except Exception:
-                pass
-                
             self.exit()
             return consumed_source_note
 

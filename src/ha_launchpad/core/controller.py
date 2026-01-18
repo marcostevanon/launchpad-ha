@@ -190,6 +190,12 @@ class LaunchpadController:
                     self._palette_selected_notes.add(res)
                 
                 if not self.color_picker.active:
+                    # Visual feedback: Flash the chosen button
+                    # (Unless it was the source note itself exiting)
+                    if res is not None and res != -1 and note != res:
+                        self.send_note(note, "white", channel=2)
+                        time.sleep(0.2)
+                    
                     # Mode exited, restore LEDs
                     self.update_led_states()
                 return True # Input Handled
@@ -236,10 +242,12 @@ class LaunchpadController:
         logger.info("Button %s pressed -> %s %s", note, action, target_entity)
 
         # Immediate feedback
-        self.send_note(note=note, color="yellow_1", channel=2)
+        self.send_note(note=note, color="yellow_3", channel=2)
         success = self.ha_client.toggle_entity(target_entity)
         if success:
-            self.send_note(note=note, color="yellow_1", channel=2)
+            # Short delay for the flash to be visible
+            time.sleep(0.2)
+            self.update_led_states()
 
     def _handle_note_on(self, note: int):
         """Handle MIDI note-on (button press)."""
