@@ -40,10 +40,10 @@ class LEDManager:
 
             color, channel = self._determine_color(entity_id)
             
-            # # Check for notification condition (Plant problem = red pulse/color)
-            # if channel == 2 and "plant." in entity_id: 
-            #      # Assuming plant problem returns channel 2 (red flash)
-            #      has_notifications = True
+            # Check for notification condition (Plant problem = red pulse/color)
+            if channel == 2 and "plant." in entity_id: 
+                 # Assuming plant problem returns channel 2 (red flash)
+                 has_notifications = True
             
             # Create a simple representation of state: "color:channel"
             state_key = f"{color}:{channel}"
@@ -73,7 +73,7 @@ class LEDManager:
         
         # Manual Sleep Button (always orange_3 when active)
         if entity_id == "manual_sleep":
-            return "orange_3", 0
+            return "lightblue_0", 0
         
         if entity_id.startswith("volume_up.") or entity_id.startswith("volume_down."):
             return self._get_volume_button_color(entity_id)

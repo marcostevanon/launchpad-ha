@@ -49,14 +49,14 @@ def test_wake_up(idle_manager):
 def test_notification_visuals(idle_manager):
     idle_manager.backend.is_connected.return_value = True
     
-    # Enter sleep - No notification -> Amber
+    # Enter sleep - No notification -> Lightblue
     idle_manager.enter_idle()
-    idle_manager.backend.send_note.assert_any_call(IDLE_MODE_BUTTON_ID, "amber_1")
+    idle_manager.backend.send_note.assert_any_call(IDLE_MODE_BUTTON_ID, "lightblue_0")
     
     # Set notification -> Orange
     idle_manager.set_notification_status(True)
     idle_manager.backend.send_note.assert_any_call(IDLE_MODE_BUTTON_ID, "orange_1")
     
-    # Clear notification -> Amber
+    # Clear notification -> Lightblue
     idle_manager.set_notification_status(False)
-    idle_manager.backend.send_note.assert_any_call(IDLE_MODE_BUTTON_ID, "amber_1")
+    idle_manager.backend.send_note.assert_any_call(IDLE_MODE_BUTTON_ID, "lightblue_0")
