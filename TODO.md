@@ -6,10 +6,7 @@
 - show a status button that shows if a command produced and error
 - send a notification to telegram when a error is produced
 
-# sleep mode
-- increase poll interval when no activity detected on launchpad for some time
-- show minimal (only one pulsing light when there are notifications e.g. plant need water)
-- show a fade button light to reactivate the launchpad (light red on top right)
+# reduce api GET calls
 
 # restart software feature
 - add a button combination to restart the software (e.g. top left + bottom right)
@@ -33,3 +30,8 @@
 
 # tech debt
 - separate: button configuration, button color implementation, and button action handling
+
+# sleep mode
+- increase poll interval when no activity detected on launchpad for some time
+- show minimal (only one pulsing light when there are notifications e.g. plant need water)
+- show a fade button light to reactivate the launchpad (light red on top right)

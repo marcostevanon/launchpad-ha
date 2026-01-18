@@ -54,11 +54,6 @@ class LEDManager:
                 changes_detected = True
                 if not dry_run:
                     self.backend.send_note(note, color, channel)
-                else:
-                    logger.info(
-                        "LED Check Change Detected: Note %s (%s) changed from %s to %s",
-                        note, entity_id, self._last_state.get(note), state_key
-                    )
 
         self._last_state = current_state
         return changes_detected, has_notifications

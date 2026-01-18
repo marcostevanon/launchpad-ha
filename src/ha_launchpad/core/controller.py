@@ -196,9 +196,12 @@ class LaunchpadController:
 
     def _handle_note_on(self, note: int):
         """Handle MIDI note-on (button press)."""
+        logger.debug("DEBUG: _handle_note_on received note: %s", note)
+        
         # 0. Idle Check: If idle, bypass all feature logic and delegate to main handler
         #    This prevents Color Picker/Brightness modes from activating during sleep.
         if self.idle_manager.is_idle:
+            logger.debug("DEBUG: System is idle, delegating to handle_button_press")
             self.handle_button_press(note)
             return
 
@@ -209,6 +212,12 @@ class LaunchpadController:
             except Exception:
                 logger.debug("handle_button_press raised", exc_info=True)
             return
+
+        from src.ha_launchpad.config.mapping import IDLE_MODE_BUTTON_ID
+        if note == IDLE_MODE_BUTTON_ID:
+             logger.debug("DEBUG: Manual Sleep Button pressed -> Handling immediately")
+             self.handle_button_press(note)
+             return
 
         # record press time
         self._press_times[note] = time.time()
