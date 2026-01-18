@@ -43,6 +43,10 @@ BUTTON_MAP: Dict[int, str] = {
     18: "plant.pothos",
 }
 
+# Special Buttons
+SLEEP_BUTTON_ID = 68
+WAKE_BUTTON_ID = 91 # Top-Left usually
+
 # Pads that should enter color-pick mode when pressed (keys from BUTTON_MAP)
 COLOR_PICK_ENABLED: Set[int] = {81, 82, 83, 84, 62}
 

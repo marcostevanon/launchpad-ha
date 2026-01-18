@@ -24,6 +24,7 @@ from src.ha_launchpad.features.color_picker import ColorPicker
 from src.ha_launchpad.core.logic.led_manager import LEDManager
 from src.ha_launchpad.core.logic.input_handler import InputHandler
 from src.ha_launchpad.core.logic.feedback_manager import FeedbackManager
+from src.ha_launchpad.core.logic.idle_manager import IdleManager
 
 logger = logging.getLogger(__name__)
 
@@ -52,6 +53,7 @@ class LaunchpadController:
         self.led_manager = LEDManager(ha_client, self.backend, button_map, self.disco)
         self.input_handler = InputHandler(ha_client, button_map, self.color_picker, self.disco)
         self.feedback = FeedbackManager(self.backend)
+        self.idle_manager = IdleManager(self.backend)
         
         self.running = False
         self._press_times: Dict[int, float] = {}
@@ -98,19 +100,72 @@ class LaunchpadController:
 
     def update_led_states(self):
         """Delegate LED updates to LEDManager"""
-        # If color pick mode is active, don't update LEDs (let the palette show)
+        # Checks
         if self.color_picker.active:
             return
             
-        self.led_manager.update_all()
+        is_idle = self.idle_manager.is_idle
+        
+        # Update logic: If idle, we dry_run to check for changes without lighting up
+        changed, has_notif = self.led_manager.update_all(dry_run=is_idle)
+        
+        if is_idle:
+            self.idle_manager.set_notification_status(has_notif)
+            
+            # If HA state changed while idle, we wake up (Remote Wake)
+            if changed:
+                logger.info("Home Assistant state changed -> Waking up...")
+                self.idle_manager.register_activity()
+                # Force immediate update to reflect new state
+                self.led_manager.update_all(dry_run=False)
+
+    def state_polling_thread(self):
+        """Background thread to poll HA states and update LEDs"""
+        logger.info("Starting state polling (interval: %ss)", POLL_INTERVAL)
+        while self.running:
+            self.idle_manager.check_status() # Check for idle timeout
+            self.update_led_states()
+            
+            # Variable polling interval
+            if self.idle_manager.is_idle:
+                time.sleep(120) # Poll slower when idle
+            else:
+                time.sleep(POLL_INTERVAL)
 
     def handle_button_press(self, note: int):
         """Handle button press via InputHandler and execute Feedback"""
         
-        # Determine actions
+        # 1. Idle Logic Check
+        was_idle = self.idle_manager.is_idle
+        
+        # Determine if this press should wake up the device
+        # For now, we allow ANY button to wake, or stick to WAKE_BUTTON_ID?
+        # User said "Show fade button/light to REACTIVATE".
+        # Let's say if idle, pressing WAKE_BUTTON_ID wakes up. 
+        # Pressing others loops or is ignored?
+        # Let's implement: WAKE_BUTTON_ID wakes up. Others ignored (to prevent accidental toggles).
+        from src.ha_launchpad.config.mapping import WAKE_BUTTON_ID
+        
+        if was_idle:
+            if note == WAKE_BUTTON_ID:
+                self.idle_manager.wake_up()
+                # Restore LEDs immediately
+                self.update_led_states()
+            # Ignore other buttons when idle
+            return
+
+        # 2. Register Activity (resets timer)
+        self.idle_manager.register_activity()
+
+        # 3. Determine actions via Handler
         actions = self.input_handler.handle_press(note)
         
-        # Execute Actions
+        # 4. Handle Sleep Action
+        if actions.get("sleep"):
+            self.idle_manager.set_manual_sleep()
+            return
+        
+        # 5. Execute Actions
         if "flash" in actions:
             f = actions["flash"]
             self.feedback.flash(f["note"], f["color"], f["duration"])
@@ -197,12 +252,6 @@ class LaunchpadController:
         if mtype == "note_off" or (mtype == "note_on" and velocity == 0):
             self._handle_note_off(note)
 
-    def state_polling_thread(self):
-        """Background thread to poll HA states and update LEDs"""
-        logger.info("Starting state polling (interval: %ss)", POLL_INTERVAL)
-        while self.running:
-            self.update_led_states()
-            time.sleep(POLL_INTERVAL)
 
     def usb_monitor_thread(self):
         """Background thread that continuously monitors Launchpad USB connection."""

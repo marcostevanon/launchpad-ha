@@ -22,15 +22,41 @@ class LEDManager:
         self.button_map = button_map
         self.disco = disco_mode
         self._unknown_entities: Set[str] = set()
+        self._last_state: Dict[int, str] = {}
 
-    def update_all(self):
-        """Update all mapped LEDs based on HA states"""
+    def update_all(self, dry_run: bool = False) -> tuple[bool, bool]:
+        """
+        Update all mapped LEDs based on HA states.
+        Returns:
+            (changes_detected: bool, has_notifications: bool)
+        """
+        changes_detected = False
+        has_notifications = False
+        current_state = {}
+
         for note, entity_id in self.button_map.items():
             if self.disco.active and entity_id in DISCO_LIGHTS:
                 continue
 
             color, channel = self._determine_color(entity_id)
-            self.backend.send_note(note, color, channel)
+            
+            # # Check for notification condition (Plant problem = red pulse/color)
+            # if channel == 2 and "plant." in entity_id: 
+            #      # Assuming plant problem returns channel 2 (red flash)
+            #      has_notifications = True
+            
+            # Create a simple representation of state: "color:channel"
+            state_key = f"{color}:{channel}"
+            current_state[note] = state_key
+            
+            # Check if changed
+            if self._last_state.get(note) != state_key:
+                changes_detected = True
+                if not dry_run:
+                    self.backend.send_note(note, color, channel)
+
+        self._last_state = current_state
+        return changes_detected, has_notifications
 
     def _determine_color(self, entity_id: str):
         """Determine the color and channel for a given entity."""
