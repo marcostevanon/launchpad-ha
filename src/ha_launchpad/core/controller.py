@@ -98,7 +98,7 @@ class LaunchpadController:
             except Exception:
                 pass
 
-    def update_led_states(self):
+    def update_led_states(self, force: bool = False):
         """Delegate LED updates to LEDManager"""
         # Checks
         if self.color_picker.active:
@@ -107,7 +107,10 @@ class LaunchpadController:
         is_idle = self.idle_manager.is_idle
         
         # Update logic: If idle, we dry_run to check for changes without lighting up
-        changed, has_notif = self.led_manager.update_all(dry_run=is_idle)
+        # UNLESS force is True (waking up)
+        dry_run = is_idle and not force
+        
+        changed, has_notif = self.led_manager.update_all(dry_run=dry_run)
         
         if is_idle:
             self.idle_manager.set_notification_status(has_notif)
@@ -150,7 +153,10 @@ class LaunchpadController:
             if note == WAKE_BUTTON_ID:
                 self.idle_manager.wake_up()
                 # Restore LEDs immediately
-                self.update_led_states()
+                self.update_led_states(force=True)
+            else:
+                # Glitch Fix: Explicitly turn off stray presses
+                self.backend.send_note(note, "off")
             # Ignore other buttons when idle
             return
 

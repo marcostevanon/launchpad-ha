@@ -67,6 +67,10 @@ class LEDManager:
                 return random.choice(colors), 2
             return "orange_1", 0
         
+        # Manual Sleep Button (always orange_3 when active)
+        if entity_id == "manual_sleep":
+            return "orange_3", 0
+        
         if entity_id.startswith("volume_up.") or entity_id.startswith("volume_down."):
             return self._get_volume_button_color(entity_id)
 
