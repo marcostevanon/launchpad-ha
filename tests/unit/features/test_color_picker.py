@@ -1,4 +1,3 @@
-import pytest
 from unittest.mock import MagicMock
 from src.ha_launchpad.features.color_picker import ColorPicker
 

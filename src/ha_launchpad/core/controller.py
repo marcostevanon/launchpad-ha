@@ -6,7 +6,6 @@ import threading
 import logging
 import random
 
-from src.ha_launchpad.utils.rotate_pad import inverse_rotation, rotate_pad
 from src.ha_launchpad.config.settings import (
     LAUNCHPAD_ROTATION,
     LAUNCHPAD_ALIVE_DELAY,
@@ -18,6 +17,7 @@ from src.ha_launchpad.config.settings import (
 from src.ha_launchpad.config.mapping import COLOR_PICK_ENABLED
 from src.ha_launchpad.infrastructure.midi.interface import MidiBackend
 from src.ha_launchpad.infrastructure.midi.mido_backend import MidoBackend
+from src.ha_launchpad.infrastructure.midi.rotated_backend import RotatedBackend
 from src.ha_launchpad.infrastructure.ha.client import HomeAssistantClient
 from src.ha_launchpad.features.disco import DiscoMode
 from src.ha_launchpad.features.color_picker import ColorPicker
@@ -35,13 +35,15 @@ class LaunchpadController:
         if backend is None:
             backend = MidoBackend()
 
+        # Wrap backend with rotation layer
+        self.backend = RotatedBackend(backend, LAUNCHPAD_ROTATION)
+        
         self.ha_client = ha_client
         self.button_map = button_map
-        self.backend = backend
         
         # Features
         self.disco = DiscoMode(ha_client)
-        self.color_picker = ColorPicker(ha_client, backend)
+        self.color_picker = ColorPicker(ha_client, self.backend)
         
         self.running = False
         self._press_times: Dict[int, float] = {}
@@ -63,8 +65,7 @@ class LaunchpadController:
     def send_note(self, note: int, color: str, channel: int = 0):
         """Send a MIDI note message to the backend"""
         try:
-            physical_note = rotate_pad(note, inverse_rotation(LAUNCHPAD_ROTATION))
-            self.backend.send_note(note=physical_note, color=color, channel=channel)
+            self.backend.send_note(note=note, color=color, channel=channel)
         except Exception:
             logger.warning(
                 "Failed to send note via backend: note=%s color=%s", note, color
@@ -296,11 +297,8 @@ class LaunchpadController:
 
         mtype = getattr(msg, "type", None)
         velocity = getattr(msg, "velocity", 0)
-        raw_note = getattr(msg, "note", None)
-        if raw_note is None:
-            return
-        note = rotate_pad(raw_note, LAUNCHPAD_ROTATION)
-
+        note = getattr(msg, "note", None)
+        
         if note is None:
             return
 

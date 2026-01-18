@@ -10,17 +10,20 @@ import os
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
 from src.ha_launchpad.infrastructure.midi.mido_backend import MidoBackend
+from src.ha_launchpad.infrastructure.midi.rotated_backend import RotatedBackend
+from src.ha_launchpad.config.settings import LAUNCHPAD_ROTATION
 
 def main():
     print("Checking for Launchpad...")
-    backend = MidoBackend()
+    raw_backend = MidoBackend()
     
-    if not backend.find_and_open():
+    if not raw_backend.find_and_open():
         print("❌ Launchpad not found!")
         print("Please check USB connection and ensure no other software is using the device.")
         sys.exit(1)
         
-    print("✅ Launchpad found and ports opened.")
+    print(f"✅ Launchpad found (Rotation: {LAUNCHPAD_ROTATION} deg).")
+    backend = RotatedBackend(raw_backend, LAUNCHPAD_ROTATION)
     
     try:
         print("\nLighting up some LEDs...")
