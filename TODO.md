@@ -14,16 +14,7 @@
 # restart software feature
 - add a button combination to restart the software (e.g. top left + bottom right)
 
-# extra
-- volume up and down buttons
-- ~~disco mode~~
-
-# tech debt
-- separate: button configuration, button color implementation, and button action handling
-
-
 # Completed
-
 # launchpad connection restore
 - program exit when launchpad not found
 - additionally there should be a launchpad deamon
@@ -35,3 +26,10 @@
 
 # rotate feature
 - rotate board (in constants) 90, 180, 270 degrees
+
+# extra
+- volume up and down buttons
+- disco mode
+
+# tech debt
+- separate: button configuration, button color implementation, and button action handling

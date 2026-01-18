@@ -4,15 +4,13 @@ from typing import Dict, Any, Optional
 import time
 import threading
 import logging
-import random
 
 from src.ha_launchpad.config.settings import (
     LAUNCHPAD_ROTATION,
     LAUNCHPAD_ALIVE_DELAY,
     LAUNCHPAD_RETRY_DELAY,
     LAUNCHPAD_MAX_RETRY_DELAY,
-    POLL_INTERVAL,
-    DISCO_LIGHTS
+    POLL_INTERVAL
 )
 from src.ha_launchpad.config.mapping import COLOR_PICK_ENABLED, BRIGHTNESS_ENABLED
 from src.ha_launchpad.infrastructure.midi.interface import MidiBackend
@@ -21,6 +19,11 @@ from src.ha_launchpad.infrastructure.midi.rotated_backend import RotatedBackend
 from src.ha_launchpad.infrastructure.ha.client import HomeAssistantClient
 from src.ha_launchpad.features.disco import DiscoMode
 from src.ha_launchpad.features.color_picker import ColorPicker
+
+# New Logic Components
+from src.ha_launchpad.core.logic.led_manager import LEDManager
+from src.ha_launchpad.core.logic.input_handler import InputHandler
+from src.ha_launchpad.core.logic.feedback_manager import FeedbackManager
 
 logger = logging.getLogger(__name__)
 
@@ -45,10 +48,13 @@ class LaunchpadController:
         self.disco = DiscoMode(ha_client)
         self.color_picker = ColorPicker(ha_client, self.backend)
         
+        # Core Logic Modules
+        self.led_manager = LEDManager(ha_client, self.backend, button_map, self.disco)
+        self.input_handler = InputHandler(ha_client, button_map, self.color_picker, self.disco)
+        self.feedback = FeedbackManager(self.backend)
+        
         self.running = False
         self._press_times: Dict[int, float] = {}
-        self._unknown_entities = set()
-        self._palette_selected_notes = set()
 
     def find_launchpad(self):
         """Find and open Launchpad MIDI ports using the provided backend."""
@@ -91,178 +97,34 @@ class LaunchpadController:
                 pass
 
     def update_led_states(self):
-        """Update all mapped LEDs based on HA states"""
+        """Delegate LED updates to LEDManager"""
         # If color pick mode is active, don't update LEDs (let the palette show)
         if self.color_picker.active:
             return
-
-        for note, entity_id in self.button_map.items():
-            if self.disco.active and entity_id in DISCO_LIGHTS:
-                continue  # Skip disco lights when disco mode is active
-
-            # Handle special entities
-            if entity_id == "disco_toggle":
-                if self.disco.active:
-                    disco_button_colors = ["orange_1", "green_1", "cyan_1", "pink_2", "yellow_1"]
-                    color = random.choice(disco_button_colors)
-                    channel = 2
-                else:
-                    color = "orange_1"
-                    channel = 0
-                self.send_note(note, color, channel)
-                continue
             
-            elif entity_id.startswith("volume_up.") or entity_id.startswith("volume_down."):
-                target_entity = entity_id.split(".", 1)[1]
-                # For Google Home devices, show volume buttons when playing or paused
-                if "nestmini" in target_entity or "studio_speaker" in target_entity:
-                    target_state = self.ha_client.get_state(target_entity)
-                    if target_state and target_state.get("state") in ["playing", "paused"]:
-                        color = "purple_1"
-                    else:
-                        color = "off"
-                else:
-                    color = "purple_1"
-                self.send_note(note, color, 0)
-                continue
-
-            state_data = self.ha_client.get_state(entity_id)
-
-            if not state_data:
-                continue
-
-            state = state_data.get("state", "unknown")
-            domain = entity_id.split(".")[0]
-            channel = 0
-
-            if domain in ["light", "switch"]:
-                if state == "on":
-                    if domain == "light" and "attributes" in state_data:
-                        brightness = state_data["attributes"].get("brightness", 255)
-                        if brightness <= 85:
-                            color = "green_3"  # on state dimmed
-                        elif brightness <= 170:
-                            color = "green_2"  # on state dimmed
-                        else:
-                            color = "green_1"  # on state
-                    else:
-                        color = "green_1"  # on state
-                else:
-                    color = "amber_1"  # off state
-            elif domain == "scene":
-                color = "blue_1"
-            elif domain == "media_player":
-                if state == "playing":
-                    color = "cyan_0"
-                    channel = 2
-                elif state == "paused":
-                    color = "amber_1"  # paused state
-                else:
-                    # For Google Home devices, show LED off when off/idle
-                    if "nestmini" in entity_id or "studio_speaker" in entity_id:
-                        color = "off"
-                    else:
-                        color = "amber_1"  # off state for other media players
-            elif domain == "plant":
-                problem = state_data.get("attributes", {}).get("problem", "unknown")
-                if problem == "none":
-                    color = "green_3"
-                    channel = 0
-                else:
-                    color = "red_2"
-                    channel = 2
-            else:
-                # unknown domain
-                self._unknown_entities.add(entity_id)
-                color = "red_2"
-
-            self.send_note(note, color, channel)
+        self.led_manager.update_all()
 
     def handle_button_press(self, note: int):
-        """Handle button press - call HA service"""
+        """Handle button press via InputHandler and execute Feedback"""
         
-        # 1. Delegate to Color Picker if active
-        if self.color_picker.active:
-            res = self.color_picker.handle_input(note)
-            if res is not None:
-                if isinstance(res, dict):
-                    source_note = res.get("source_note")
-                    pulse_color = res.get("pulse_color")
-                    
-                    if source_note:
-                        self._palette_selected_notes.add(source_note)
-                    
-                    if not self.color_picker.active:
-                        # Visual feedback: Flash/Pulse
-                        if source_note and pulse_color:
-                             # Pulse the SOURCE note as requested by user
-                             self.send_note(source_note, pulse_color, channel=2)
-                             
-                             # If we clicked away from source, turn off the palette button
-                             if note != source_note:
-                                 self.send_note(note, "off")
-                                 
-                             time.sleep(0.4)
-                        
-                        # Mode exited, restore LEDs
-                        self.update_led_states()
-                elif res == -1:
-                    pass # Handled but ignore
-                
-                return True # Input Handled
-            return False # Not handled
-
-        if note not in self.button_map:
-            logger.warning("Unmapped button: %s", note)
-            return
-
-        entity_id = self.button_map[note]
-
-        # 2. Handle special actions
-        if entity_id == "disco_toggle":
-            self.disco.toggle()
-            # Force immediate update of the button state
-            self.update_led_states()
-            return
+        # Determine actions
+        actions = self.input_handler.handle_press(note)
+        
+        # Execute Actions
+        if "flash" in actions:
+            f = actions["flash"]
+            self.feedback.flash(f["note"], f["color"], f["duration"])
             
-        elif entity_id.startswith("volume_up."):
-            target = entity_id.split(".", 1)[1]
-            self.ha_client.volume_up(target)
-            return
+        if "pulse" in actions:
+            p = actions["pulse"]
+            self.feedback.pulse(p["note"], p["color"], p["duration"], p.get("clear_note"))
             
-        elif entity_id.startswith("volume_down."):
-            target = entity_id.split(".", 1)[1]
-            self.ha_client.volume_down(target)
-            return
-
-        # 3. Regular entities (toggle)
-        if entity_id.startswith("plant."):
-            return
-
-        action = "toggle"
-        target_entity = entity_id
-
-        if target_entity in self._unknown_entities:
-            logger.warning(
-                "Cannot %s %s - entity not found in Home Assistant",
-                action,
-                target_entity,
-            )
-            return
-
-        logger.info("Button %s pressed -> %s %s", note, action, target_entity)
-
-        # Immediate feedback
-        self.send_note(note=note, color="yellow_3", channel=2)
-        success = self.ha_client.toggle_entity(target_entity)
-        if success:
-            # Short delay for the flash to be visible
-            time.sleep(0.2)
+        if actions.get("update_leds"):
             self.update_led_states()
 
     def _handle_note_on(self, note: int):
         """Handle MIDI note-on (button press)."""
-        # If in color-pick mode, process immediately
+        # If in color-pick mode, process immediately via handler
         if self.color_picker.active:
             try:
                 self.handle_button_press(note)
@@ -301,14 +163,12 @@ class LaunchpadController:
         if self.color_picker.active:
             # If the note released IS the source note, handle it
             if note == self.color_picker.source_note:
-                 self.color_picker.handle_input(note)
+                 self.handle_button_press(note)
             return
 
-        # CASE 2: Button was just used for a color-pick selection
-        if note in self._palette_selected_notes:
-            self._palette_selected_notes.discard(note)
-            logger.debug("Suppressing toggle handle for %s (already handled by pick)", note)
-            return
+        # CASE 2: InputHandler tracks selection state
+        if self.input_handler.handle_note_off(note):
+             return # Suppress default
 
         # CASE 3: Normal toggle
         try:
