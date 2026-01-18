@@ -4,18 +4,17 @@
 import time
 import logging
 
-from .config import (
+from src.ha_launchpad.config.settings import (
     HA_URL,
     HA_TOKEN,
-    BUTTON_MAP,
     HA_CONNECT_RETRY_DELAY,
     HA_CONNECT_MAX_DELAY,
 )
-from .backend.mido_backend import MidoBackend
-from .backend.mock_backend import MockBackend
-from .api import HomeAssistantAPI
-from .controller import LaunchpadController
-from .logging_config import configure_logging
+from src.ha_launchpad.config.mapping import BUTTON_MAP
+from src.ha_launchpad.infrastructure.midi.mido_backend import MidoBackend
+from src.ha_launchpad.infrastructure.ha.client import HomeAssistantClient
+from src.ha_launchpad.core.controller import LaunchpadController
+from src.ha_launchpad.logging_config import configure_logging
 
 
 logger = logging.getLogger(__name__)
@@ -36,14 +35,14 @@ def main() -> None:
         )
         raise SystemExit(1)
 
-    ha_api = HomeAssistantAPI(HA_URL, HA_TOKEN)
+    ha_client = HomeAssistantClient(HA_URL, HA_TOKEN)
 
     logger.info("Connecting to Home Assistant...")
 
     attempt = 0
     while True:
         attempt += 1
-        test_state = ha_api.get_state("sun.sun")
+        test_state = ha_client.get_state("sun.sun")
         if test_state:
             logger.info("Connected")
             break
@@ -58,7 +57,7 @@ def main() -> None:
 
     backend = MidoBackend()
     # backend = MockBackend()
-    controller = LaunchpadController(ha_api, BUTTON_MAP, backend=backend)
+    controller = LaunchpadController(ha_client, BUTTON_MAP, backend=backend)
     controller.run()
 
 

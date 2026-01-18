@@ -1,14 +1,22 @@
 """A mock MIDI backend used for development without hardware."""
 
-from typing import Optional
+from typing import Optional, Any
 import logging
-
+from .interface import MidiBackend
 
 logger = logging.getLogger(__name__)
 
 
 class MockMidiPort:
     """Mock MIDI port that mimics mido's port interface."""
+
+    def __iter__(self):
+        return self
+
+    def __next__(self):
+        # Simulate blocking or just raise StopIteration for now
+        # Ideally we might want to inject messages here for testing
+        raise StopIteration
 
     def iter_pending(self):
         """Return an empty iterator (no pending messages)."""
@@ -19,7 +27,7 @@ class MockMidiPort:
         pass
 
 
-class MockBackend:
+class MockBackend(MidiBackend):
     def __init__(self, ident: Optional[str] = None):
         self.ident = ident or "MOCK"
         self.midi_in = None
@@ -37,7 +45,7 @@ class MockBackend:
             "[MOCK] send_note note=%s color=%s channel=%s", note, color, channel
         )
 
-    def iter_incoming(self):
+    def iter_incoming(self) -> Optional[Any]:
         return self.midi_in
 
     def is_connected(self) -> bool:

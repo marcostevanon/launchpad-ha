@@ -1,43 +1,4 @@
-from typing import Dict
-import os
-
-try:
-    from dotenv import load_dotenv  # type: ignore
-
-    load_dotenv()
-except Exception:
-    pass
-
-LOG_LEVEL = os.getenv("LOG_LEVEL", "INFO")
-LOG_FILE = os.getenv("LOG_FILE", "/var/log/ha-launchpad.out.log")
-
-HA_URL = os.getenv("HA_URL")
-HA_TOKEN = os.getenv("HA_TOKEN")
-POLL_INTERVAL = float(os.getenv("POLL_INTERVAL", "1.0"))
-
-LAUNCHPAD_VENDOR = int(os.getenv("LAUNCHPAD_VENDOR", "0x1235"), 16)
-LAUNCHPAD_PRODUCT = int(os.getenv("LAUNCHPAD_PRODUCT", "0x0113"), 16)
-LAUNCHPAD_IDENT = os.getenv("LAUNCHPAD_IDENT", "LPMiniMK3 MIDI")
-LAUNCHPAD_INACTIVITY_TIMEOUT = float(os.getenv("LAUNCHPAD_INACTIVITY_TIMEOUT", "15.0"))
-
-HA_CONNECT_RETRY_DELAY = float(os.getenv("HA_CONNECT_RETRY_DELAY", "3.0"))
-HA_CONNECT_MAX_DELAY = float(os.getenv("HA_CONNECT_MAX_DELAY", "30.0"))
-HA_REQUEST_RETRY_DELAY = float(os.getenv("HA_REQUEST_RETRY_DELAY", "2.0"))
-HA_REQUEST_MAX_DELAY = float(os.getenv("HA_REQUEST_MAX_DELAY", "5.0"))
-
-VOLUME_STEP = float(os.getenv("VOLUME_STEP", "0.1"))
-
-LAUNCHPAD_ALIVE_DELAY = float(os.getenv("LAUNCHPAD_ALIVE_DELAY", "3.0"))
-LAUNCHPAD_RETRY_DELAY = float(os.getenv("LAUNCHPAD_RETRY_DELAY", "5.0"))
-LAUNCHPAD_MAX_RETRY_DELAY = float(os.getenv("LAUNCHPAD_MAX_RETRY_DELAY", "10.0"))
-
-LAUNCHPAD_ROTATION = int(os.getenv("LAUNCHPAD_ROTATION", "180"))
-
-if LAUNCHPAD_ROTATION not in {0, 90, 180, 270}:
-    raise ValueError("LAUNCHPAD_ROTATION must be 0, 90, 180 or 270")
-
-DISCO_LIGHTS = ["light.bulb_1", "light.bulb_2", "light.bulb_3"]
-DISCO_SPEED = float(os.getenv("DISCO_SPEED", "0.5"))
+from typing import Dict, Set, Any
 
 # Launchpad button mapping (pad number -> HA entity)
 BUTTON_MAP: Dict[int, str] = {
@@ -83,11 +44,11 @@ BUTTON_MAP: Dict[int, str] = {
 }
 
 # Pads that should enter color-pick mode when pressed (keys from BUTTON_MAP)
-COLOR_PICK_ENABLED = {81, 82, 83, 84, 62}
+COLOR_PICK_ENABLED: Set[int] = {81, 82, 83, 84, 62}
 
 # Palette display mapping: map pad -> color name in `COLORS` for non-RGB devices.
 # Use these for lighting pads when RGB SysEx isn't available.
-COLOR_PALETTE = {
+COLOR_PALETTE: Dict[int, Dict[str, Any]] = {
     41: {"color": "red_1", "rgb": (255, 0, 0)},
     42: {"color": "blue_1", "rgb": (105, 0, 255)},
     43: {"color": "yellow_3", "rgb": (255, 152, 57)},
@@ -98,7 +59,7 @@ COLOR_PALETTE = {
     34: {"color": "white", "rgb": (255, 214, 161)},
 }
 
-COLORS = {
+COLORS: Dict[str, int] = {
     # 0–7
     "off": 0,
     "gray_1": 1,

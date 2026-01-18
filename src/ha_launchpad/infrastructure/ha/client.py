@@ -5,7 +5,7 @@ import time
 import requests
 import logging
 
-from .config import (
+from src.ha_launchpad.config.settings import (
     HA_REQUEST_RETRY_DELAY,
     HA_REQUEST_MAX_DELAY,
     VOLUME_STEP,
@@ -14,7 +14,7 @@ from .config import (
 logger = logging.getLogger(__name__)
 
 
-class HomeAssistantAPI:
+class HomeAssistantClient:
     def __init__(self, url: str, token: str):
         self.url = url.rstrip("/")
         self.headers = {

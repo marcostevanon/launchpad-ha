@@ -7,7 +7,7 @@ console/testing runs.
 
 import logging
 from typing import Optional
-from .config import LOG_LEVEL, LOG_FILE
+from src.ha_launchpad.config.settings import LOG_LEVEL, LOG_FILE
 
 
 def configure_logging(level: Optional[int] = None) -> None:

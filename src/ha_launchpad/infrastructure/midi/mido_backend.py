@@ -1,22 +1,22 @@
-"""MIDI backend using mido + python-rtmidi (RtMidi) for Launchpad access.
-
-This backend provides a small wrapper that the controller can use to find
-and open the Launchpad device, send notes and SysEx, iterate incoming
-messages and perform cleanup.
-"""
+"""MIDI backend using mido + python-rtmidi (RtMidi) for Launchpad access."""
 
 import usb.core
-from typing import Optional, Iterable
+from typing import Optional
 import logging
 import mido
 
-from ..config import LAUNCHPAD_IDENT, COLORS, LAUNCHPAD_VENDOR, LAUNCHPAD_PRODUCT
-
+from src.ha_launchpad.config.settings import (
+    LAUNCHPAD_IDENT,
+    LAUNCHPAD_VENDOR,
+    LAUNCHPAD_PRODUCT,
+)
+from src.ha_launchpad.config.mapping import COLORS
+from .interface import MidiBackend
 
 logger = logging.getLogger(__name__)
 
 
-class MidoBackend:
+class MidoBackend(MidiBackend):
     def __init__(self, ident: Optional[str] = None):
         self.usb_device = None
         self.ident = ident or LAUNCHPAD_IDENT
