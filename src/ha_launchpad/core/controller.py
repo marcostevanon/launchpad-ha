@@ -175,15 +175,23 @@ class LaunchpadController:
             return
         
         # 5. Execute Actions
+        feedback_occurred = False
+        
         if "flash" in actions:
             f = actions["flash"]
             self.feedback.flash(f["note"], f["color"], f["duration"])
+            feedback_occurred = True
             
         if "pulse" in actions:
             p = actions["pulse"]
             self.feedback.pulse(p["note"], p["color"], p["duration"], p.get("clear_note"))
+            feedback_occurred = True
             
-        if actions.get("update_leds"):
+        if feedback_occurred:
+            # Force refresh of LEDs to overwrite the temporary feedback state
+            self.led_manager.invalidate_cache()
+            
+        if actions.get("update_leds") or feedback_occurred:
             self.update_led_states()
 
     def _handle_note_on(self, note: int):
