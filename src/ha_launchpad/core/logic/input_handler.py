@@ -2,7 +2,7 @@ import logging
 import time
 from typing import Dict, Set, Optional, Any
 
-from src.ha_launchpad.config.mapping import COLOR_PICK_ENABLED, BRIGHTNESS_ENABLED, SLEEP_BUTTON_ID
+from src.ha_launchpad.config.mapping import COLOR_PICK_ENABLED, BRIGHTNESS_ENABLED, IDLE_MODE_BUTTON_ID
 from src.ha_launchpad.infrastructure.ha.client import HomeAssistantClient
 from src.ha_launchpad.features.color_picker import ColorPicker
 from src.ha_launchpad.features.disco import DiscoMode
@@ -39,7 +39,7 @@ class InputHandler:
             return self._handle_color_picker_input(note)
             
         # 2. Check mapping
-        if note == SLEEP_BUTTON_ID:
+        if note == IDLE_MODE_BUTTON_ID:
              return {"sleep": True}
              
         if note not in self.button_map:

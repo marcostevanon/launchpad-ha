@@ -3,7 +3,7 @@ import logging
 from typing import Optional
 
 from src.ha_launchpad.config.settings import IDLE_TIMEOUT
-from src.ha_launchpad.config.mapping import WAKE_BUTTON_ID, SLEEP_BUTTON_ID
+from src.ha_launchpad.config.mapping import IDLE_MODE_BUTTON_ID
 from src.ha_launchpad.infrastructure.midi.interface import MidiBackend
 
 logger = logging.getLogger(__name__)
@@ -70,7 +70,7 @@ class IdleManager:
         # Clear main grid
         if self.backend and self.backend.is_connected():
             for note in range(128):
-                if note != WAKE_BUTTON_ID:
+                if note != IDLE_MODE_BUTTON_ID:
                      self.backend.send_note(note, "off")
 
     def _update_wake_button(self):
@@ -81,6 +81,6 @@ class IdleManager:
         if self._has_notifications:
             color = "orange_1"
         else:
-            color = "green_2"
+            color = "lightblue_0"
             
-        self.backend.send_note(WAKE_BUTTON_ID, color)
+        self.backend.send_note(IDLE_MODE_BUTTON_ID, color)

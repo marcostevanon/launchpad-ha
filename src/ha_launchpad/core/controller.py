@@ -149,11 +149,11 @@ class LaunchpadController:
         # User said "Show fade button/light to REACTIVATE".
         # Let's say if idle, pressing WAKE_BUTTON_ID wakes up. 
         # Pressing others loops or is ignored?
-        # Let's implement: WAKE_BUTTON_ID wakes up. Others ignored (to prevent accidental toggles).
-        from src.ha_launchpad.config.mapping import WAKE_BUTTON_ID
+        # Let's implement: IDLE_MODE_BUTTON_ID wakes up. Others ignored (to prevent accidental toggles).
+        from src.ha_launchpad.config.mapping import IDLE_MODE_BUTTON_ID
         
         if was_idle:
-            if note == WAKE_BUTTON_ID:
+            if note == IDLE_MODE_BUTTON_ID:
                 self.idle_manager.wake_up()
                 # Restore LEDs immediately
                 self.update_led_states(force=True)
@@ -249,6 +249,12 @@ class LaunchpadController:
              return # Suppress default
 
         # CASE 3: Normal toggle
+        # CRITICAL FIX: Do NOT toggle special Idle/Sleep button on release
+        # This prevents "Wake Up (Press) -> Sleep (Release)" loop.
+        from src.ha_launchpad.config.mapping import IDLE_MODE_BUTTON_ID
+        if note == IDLE_MODE_BUTTON_ID:
+            return
+
         try:
             self.handle_button_press(note)
         except Exception:

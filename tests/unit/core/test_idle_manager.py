@@ -3,7 +3,7 @@ import pytest
 from unittest.mock import MagicMock, patch
 import time
 from src.ha_launchpad.core.logic.idle_manager import IdleManager
-from src.ha_launchpad.config.mapping import WAKE_BUTTON_ID
+from src.ha_launchpad.config.mapping import IDLE_MODE_BUTTON_ID
 
 @pytest.fixture
 def idle_manager():
@@ -49,14 +49,14 @@ def test_wake_up(idle_manager):
 def test_notification_visuals(idle_manager):
     idle_manager.backend.is_connected.return_value = True
     
-    # Enter sleep - No notification -> Green
+    # Enter sleep - No notification -> Amber
     idle_manager.enter_idle()
-    idle_manager.backend.send_note.assert_any_call(WAKE_BUTTON_ID, "green_2")
+    idle_manager.backend.send_note.assert_any_call(IDLE_MODE_BUTTON_ID, "amber_1")
     
     # Set notification -> Orange
     idle_manager.set_notification_status(True)
-    idle_manager.backend.send_note.assert_any_call(WAKE_BUTTON_ID, "orange_1")
+    idle_manager.backend.send_note.assert_any_call(IDLE_MODE_BUTTON_ID, "orange_1")
     
-    # Clear notification -> Green
+    # Clear notification -> Amber
     idle_manager.set_notification_status(False)
-    idle_manager.backend.send_note.assert_any_call(WAKE_BUTTON_ID, "green_2")
+    idle_manager.backend.send_note.assert_any_call(IDLE_MODE_BUTTON_ID, "amber_1")
