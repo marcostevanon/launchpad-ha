@@ -196,6 +196,12 @@ class LaunchpadController:
 
     def _handle_note_on(self, note: int):
         """Handle MIDI note-on (button press)."""
+        # 0. Idle Check: If idle, bypass all feature logic and delegate to main handler
+        #    This prevents Color Picker/Brightness modes from activating during sleep.
+        if self.idle_manager.is_idle:
+            self.handle_button_press(note)
+            return
+
         # If in color-pick mode, process immediately via handler
         if self.color_picker.active:
             try:
