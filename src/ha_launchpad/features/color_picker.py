@@ -136,10 +136,10 @@ class ColorPicker:
             try:
                 if self.backend and self.backend.is_connected():
                     # Flash the button
-                    self.backend.send_note(note, "white", channel=2)
+                    self.backend.send_note(note, "yellow_3", channel=2)
                     if self.source_note is not None:
                          # Update source note to reflect "adjusting"
-                         self.backend.send_note(self.source_note, "white")
+                         self.backend.send_note(self.source_note, "yellow_3")
             except Exception:
                 pass
                 
