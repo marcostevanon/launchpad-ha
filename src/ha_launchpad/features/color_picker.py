@@ -45,13 +45,20 @@ class ColorPicker:
                 except Exception:
                     pass
 
-    def handle_input(self, note: int) -> bool:
+    def handle_input(self, note: int) -> Optional[int]:
         """
         Handle input while in color pick mode.
-        Returns True if the input was handled (consumed), False otherwise.
+        Returns the source_note if a palette color was picked, 
+        otherwise returns None if the input was handled (consumed), 
+        and raises an exception/returns specific value if not handled? 
+        Actually, let's stick to returning source_note if 'consumed and selected',
+        True if 'consumed but not selected', and False if 'not handled'.
+        Wait, let's keep it simple: return the source_note and a flag.
+        
+        Better: return True if handled, and modify a state to indicate selection.
         """
         if not self.active:
-            return False
+            return None
 
         # If press is on the source pad
         if note == self.source_note:
@@ -66,7 +73,7 @@ class ColorPicker:
                 except Exception:
                     pass
             self.exit()
-            return True
+            return None # Not a "selection" that suppresses future off-handling
 
         # If press is on palette -> pick color
         if note in COLOR_PALETTE and self.target_entity:
@@ -81,9 +88,7 @@ class ColorPicker:
             except Exception:
                 pass
             
-            # Mark that a palette selection happened
-            if self.source_note is not None:
-                self.selected_notes.add(self.source_note)
+            consumed_source_note = self.source_note
             
             # Provide visual feedback on the source pad
             try:
@@ -95,7 +100,7 @@ class ColorPicker:
                 pass
                 
             self.exit()
-            return True
+            return consumed_source_note
 
-        # Ignore other buttons while in this mode
-        return True
+        # Ignore other buttons while in this mode (return something that signals handled)
+        return -1 # Magic value for "handled but ignore"

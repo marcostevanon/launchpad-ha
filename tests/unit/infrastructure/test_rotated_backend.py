@@ -1,3 +1,4 @@
+import pytest
 from unittest.mock import MagicMock
 from src.ha_launchpad.infrastructure.midi.rotated_backend import RotatedBackend
 

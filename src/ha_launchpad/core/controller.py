@@ -48,6 +48,7 @@ class LaunchpadController:
         self.running = False
         self._press_times: Dict[int, float] = {}
         self._unknown_entities = set()
+        self._palette_selected_notes = set()
 
     def find_launchpad(self):
         """Find and open Launchpad MIDI ports using the provided backend."""
@@ -182,12 +183,17 @@ class LaunchpadController:
         
         # 1. Delegate to Color Picker if active
         if self.color_picker.active:
-            handled = self.color_picker.handle_input(note)
-            if handled:
+            res = self.color_picker.handle_input(note)
+            if res is not None:
+                if res != -1:
+                    # A selection happened, mark the source note as consumed
+                    self._palette_selected_notes.add(res)
+                
                 if not self.color_picker.active:
                     # Mode exited, restore LEDs
                     self.update_led_states()
-                return
+                return True # Input Handled
+            return False # Not handled
 
         if note not in self.button_map:
             logger.warning("Unmapped button: %s", note)
@@ -268,23 +274,20 @@ class LaunchpadController:
             duration = time.time() - start
             logger.debug(f"Button {note} was pressed for {duration:.2f} seconds")
 
-        # If we are in color pick mode OR handle_input swallowed it
-        # Actually logic is: if color picker is active, it handles it?
-        # Re-reading original `handle_button_press`:
-        # It checks `if self.color_pick_mode` at start.
-        
-        # In my logic, `_handle_note_on` might have JUST ENTERED color picker mode.
-        # If so, `self.color_picker.active` is True.
-        
-        # If `color_picker.active` is True, we should NOT trigger normal toggle on release
-        # UNLESS the color picker logic says so (e.g. short tap).
-        
+        # CASE 1: Mode is active
         if self.color_picker.active:
             # If the note released IS the source note, handle it
             if note == self.color_picker.source_note:
                  self.color_picker.handle_input(note)
             return
 
+        # CASE 2: Button was just used for a color-pick selection
+        if note in self._palette_selected_notes:
+            self._palette_selected_notes.discard(note)
+            logger.debug("Suppressing toggle handle for %s (already handled by pick)", note)
+            return
+
+        # CASE 3: Normal toggle
         try:
             self.handle_button_press(note)
         except Exception:

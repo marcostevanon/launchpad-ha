@@ -1,3 +1,4 @@
+import pytest
 from unittest.mock import MagicMock
 from src.ha_launchpad.features.color_picker import ColorPicker
 
@@ -36,9 +37,9 @@ def test_handle_input_source_note_toggle(color_picker):
     color_picker.ha_client.reset_mock()
     
     # Press source note -> should toggle
-    handled = color_picker.handle_input(81)
+    res = color_picker.handle_input(81)
     
-    assert handled
+    assert res is None # Signals handled but no selection to suppress off
     assert not color_picker.active
     color_picker.ha_client.toggle_entity.assert_called_with("light.test")
 
@@ -49,9 +50,9 @@ def test_handle_input_palette_pick(color_picker):
     color_picker.ha_client.reset_mock()
     
     # Press palette note (e.g. 41 is red_1)
-    handled = color_picker.handle_input(41)
+    res = color_picker.handle_input(41)
     
-    assert handled
+    assert res == 81 # Signals selection on 81
     assert not color_picker.active
     
     # Should call turn_on with rgb
@@ -64,9 +65,8 @@ def test_handle_input_ignore_unmapped(color_picker):
     color_picker.enter("light.test", 81)
     
     # Press random note
-    handled = color_picker.handle_input(999)
+    res = color_picker.handle_input(999)
     
-    # Should return True (swallowed) but stay active? 
-    # Logic says: "Ignore other buttons while in this mode" and returns True
-    assert handled
+    # Should return -1 (swallowed) but stay active
+    assert res == -1
     assert color_picker.active
