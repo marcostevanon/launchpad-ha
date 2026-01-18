@@ -24,19 +24,14 @@ class InputHandler:
         self._palette_selected_notes: Set[int] = set()
         self._last_pressed_note: Optional[int] = None
 
-    def handle_press(self, note: int) -> Dict[str, Any]:
+    def handle_press(self, note: int, is_idle: bool = False) -> Dict[str, Any]:
         """
         Handle a button press. 
-        Returns a dict of actions for the controller to perform, e.g.:
-        {
-            "update_leds": bool,
-            "flash": {"note": int, "color": str, "duration": float},
-            "pulse": {"note": int, "color": str, "duration": float, "clear_note": Optional[int]}
-        }
+        Returns a dict of actions for the controller to perform.
         """
         
         # 1. Color Picker Delegation
-        if self.color_picker.active:
+        if self.color_picker.active and not is_idle:
             return self._handle_color_picker_input(note)
             
         # 1.5 Restart Chord Check
@@ -46,6 +41,9 @@ class InputHandler:
         
         # Update last note
         self._last_pressed_note = note
+
+        if is_idle:
+            return {}
 
         # 2. Check mapping
         if note == IDLE_MODE_BUTTON_ID:

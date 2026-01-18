@@ -142,18 +142,19 @@ class LaunchpadController:
     def handle_button_press(self, note: int):
         """Handle button press via InputHandler and execute Feedback"""
         
-        # 1. Idle Logic Check
-        was_idle = self.idle_manager.is_idle
+        is_idle = self.idle_manager.is_idle
         
-        # Determine if this press should wake up the device
-        # For now, we allow ANY button to wake, or stick to WAKE_BUTTON_ID?
-        # User said "Show fade button/light to REACTIVATE".
-        # Let's say if idle, pressing WAKE_BUTTON_ID wakes up. 
-        # Pressing others loops or is ignored?
-        # Let's implement: IDLE_MODE_BUTTON_ID wakes up. Others ignored (to prevent accidental toggles).
-        from src.ha_launchpad.config.mapping import IDLE_MODE_BUTTON_ID
+        # 1. Determine actions via Handler
+        actions = self.input_handler.handle_press(note, is_idle=is_idle)
         
-        if was_idle:
+        # 2. Handle Restart Action (always prioritized)
+        if actions.get("restart"):
+            logger.info("Restart action received. Exiting with non-zero code...")
+            sys.exit(1)
+        
+        # 3. Idle Logic Check
+        if is_idle:
+            from src.ha_launchpad.config.mapping import IDLE_MODE_BUTTON_ID
             if note == IDLE_MODE_BUTTON_ID:
                 self.idle_manager.wake_up()
                 # Restore LEDs immediately
@@ -161,25 +162,18 @@ class LaunchpadController:
             else:
                 # Glitch Fix: Explicitly turn off stray presses
                 self.backend.send_note(note, "off")
-            # Ignore other buttons when idle
+            # Ignore other actions when idle
             return
 
-        # 2. Register Activity (resets timer)
+        # 4. Register Activity (resets timer)
         self.idle_manager.register_activity()
 
-        # 3. Determine actions via Handler
-        actions = self.input_handler.handle_press(note)
-        
-        # 4. Handle Sleep Action
+        # 5. Handle Sleep Action
         if actions.get("sleep"):
             self.idle_manager.set_manual_sleep()
             return
         
-        if actions.get("restart"):
-            logger.info("Restart action received. Exiting with non-zero code...")
-            sys.exit(1)
-        
-        # 5. Execute Actions
+        # 6. Execute Feedback Actions
         feedback_occurred = False
         
         if "flash" in actions:
