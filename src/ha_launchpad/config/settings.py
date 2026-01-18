@@ -14,7 +14,7 @@ LOG_FILE = os.getenv("LOG_FILE", "/var/log/ha-launchpad.out.log")
 # Home Assistant
 HA_URL = os.getenv("HA_URL")
 HA_TOKEN = os.getenv("HA_TOKEN")
-POLL_INTERVAL = float(os.getenv("POLL_INTERVAL", "1.0"))
+POLL_INTERVAL = float(os.getenv("POLL_INTERVAL", "1.5"))
 
 HA_CONNECT_RETRY_DELAY = float(os.getenv("HA_CONNECT_RETRY_DELAY", "3.0"))
 HA_CONNECT_MAX_DELAY = float(os.getenv("HA_CONNECT_MAX_DELAY", "30.0"))
@@ -22,7 +22,7 @@ HA_REQUEST_RETRY_DELAY = float(os.getenv("HA_REQUEST_RETRY_DELAY", "2.0"))
 HA_REQUEST_MAX_DELAY = float(os.getenv("HA_REQUEST_MAX_DELAY", "5.0"))
 
 # Volume
-VOLUME_STEP = float(os.getenv("VOLUME_STEP", "0.1"))
+VOLUME_STEP = float(os.getenv("VOLUME_STEP", "0.07"))
 
 # Launchpad Connection
 LAUNCHPAD_VENDOR = int(os.getenv("LAUNCHPAD_VENDOR", "0x1235"), 16)

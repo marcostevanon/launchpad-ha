@@ -1,12 +1,6 @@
-# TODO list
-- todo Tv!
-- ! TODO remove comments (on MidoBackend)
-
 # Error handling improvements:
 - show a status button that shows if a command produced and error
 - send a notification to telegram when a error is produced
-
-# reduce api GET calls
 
 # restart software feature
 - add a button combination to restart the software (e.g. top left + bottom right)

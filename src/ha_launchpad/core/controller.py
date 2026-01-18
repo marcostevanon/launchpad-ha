@@ -4,6 +4,7 @@ from typing import Dict, Any, Optional
 import time
 import threading
 import logging
+import sys
 
 from src.ha_launchpad.config.settings import (
     LAUNCHPAD_ROTATION,
@@ -173,6 +174,10 @@ class LaunchpadController:
         if actions.get("sleep"):
             self.idle_manager.set_manual_sleep()
             return
+        
+        if actions.get("restart"):
+            logger.info("Restart action received. Exiting with non-zero code...")
+            sys.exit(1)
         
         # 5. Execute Actions
         feedback_occurred = False

@@ -33,7 +33,7 @@ def test_volume_up(ha_client):
         # Mock initial state get
         m.get("http://test.local/api/states/media_player.test", json={"state": "playing", "attributes": {"volume_level": 0.5}})
         # Mock volume set
-        m.post("http://test.local/api/services/media_player/volume_set", status_code=200, additional_matcher=lambda r: r.json()['volume_level'] == 0.6)
+        m.post("http://test.local/api/services/media_player/volume_set", status_code=200, additional_matcher=lambda r: round(r.json()['volume_level'], 2) == 0.57)
         
         success = ha_client.volume_up("media_player.test")
         assert success
