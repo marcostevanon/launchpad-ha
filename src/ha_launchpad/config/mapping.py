@@ -14,6 +14,7 @@ BUTTON_MAP: Dict[int, str] = {
     # bedroom
     61: "light.bulb_bedroom",
     62: "light.bedroom_lamp",
+    63: "switch.humidifier",
 
     # scenes
     85: "scene.i_m_home",
