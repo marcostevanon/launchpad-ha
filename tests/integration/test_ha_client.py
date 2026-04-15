@@ -28,6 +28,14 @@ def test_toggle_entity_light(ha_client):
         assert success
         assert m.called
 
+def test_toggle_entity_script(ha_client):
+    with requests_mock.Mocker() as m:
+        m.post("http://test.local/api/services/script/turn_on", status_code=200)
+
+        success = ha_client.toggle_entity("script.vinyl_play_on_sonos")
+        assert success
+        assert m.called
+
 def test_volume_up(ha_client):
     with requests_mock.Mocker() as m:
         # Mock initial state get

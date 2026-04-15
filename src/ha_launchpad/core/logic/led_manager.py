@@ -99,6 +99,9 @@ class LEDManager:
             
         if domain == "scene":
             return "blue_1", 0
+
+        if domain == "script":
+            return "purple_1", 0
             
         if domain == "media_player":
             if state == "playing":

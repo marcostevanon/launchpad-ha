@@ -39,6 +39,9 @@ BUTTON_MAP: Dict[int, str] = {
     46: "volume_down.media_player.nestmini7849",
     47: "volume_up.media_player.nestmini7849",
 
+    35: "script.vinyl_play_on_sonos",
+    36: "script.vinyl_stop",
+
     # plants
     17: "plant.monstera",
     18: "plant.pothos",

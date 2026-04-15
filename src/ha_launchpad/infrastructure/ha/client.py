@@ -91,7 +91,7 @@ class HomeAssistantClient:
             return {}
 
     def toggle_entity(self, entity_id: str) -> bool:
-        """Toggle a light, switch or activate a scene."""
+        """Trigger action based on entity domain."""
         domain = entity_id.split(".")[0]
 
         if domain == "light":
@@ -100,6 +100,8 @@ class HomeAssistantClient:
             return self.call_service("switch", "toggle", entity_id)
         elif domain == "scene":
             return self.call_service("scene", "turn_on", entity_id)
+        elif domain == "script":
+            return self.call_service("script", "turn_on", entity_id)
         elif domain == "media_player":
             state_data = self.get_state(entity_id)
             if state_data and state_data.get("state") in ["off", "unavailable"]:
