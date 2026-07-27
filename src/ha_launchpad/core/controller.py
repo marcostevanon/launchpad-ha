@@ -5,6 +5,7 @@ import signal
 import sys
 import threading
 import time
+from pathlib import Path
 
 from ha_launchpad.config.mapping import (
     ALL_PADS,
@@ -12,12 +13,15 @@ from ha_launchpad.config.mapping import (
     COLOR_PICK_ENABLED,
 )
 from ha_launchpad.config.settings import (
+    HEARTBEAT_FILE,
+    HEARTBEAT_INTERVAL,
     IDLE_POLL_INTERVAL,
     LAUNCHPAD_ALIVE_DELAY,
     LAUNCHPAD_MAX_RETRY_DELAY,
     LAUNCHPAD_RETRY_DELAY,
     LAUNCHPAD_ROTATION,
     POLL_INTERVAL,
+    RELEASE_ID,
 )
 from ha_launchpad.core.logic.feedback_manager import FeedbackManager
 from ha_launchpad.core.logic.idle_manager import IdleManager
@@ -67,6 +71,7 @@ class LaunchpadController:
         self.idle_manager = IdleManager(self.backend)
 
         self.running = False
+        self._last_heartbeat = 0.0
         self._press_times: dict[int, float] = {}
 
     def _install_signal_handlers(self):
@@ -165,10 +170,32 @@ class LaunchpadController:
                     self.idle_manager.show_standby_preview(previewable)
                 self.led_manager.commit(changes)
 
+    def _write_heartbeat(self):
+        """Record that this release is alive and actually polling.
+
+        A deploy watches this file: `launchctl print` can only say a process
+        exists, not that it reached Home Assistant and opened the Launchpad.
+        """
+        if not HEARTBEAT_FILE:
+            return
+
+        now = time.monotonic()
+        if now - self._last_heartbeat < HEARTBEAT_INTERVAL:
+            return
+
+        try:
+            path = Path(HEARTBEAT_FILE)
+            path.parent.mkdir(parents=True, exist_ok=True)
+            path.write_text(RELEASE_ID)
+            self._last_heartbeat = now
+        except OSError as exc:
+            logger.debug("Could not write heartbeat to %s: %s", HEARTBEAT_FILE, exc)
+
     def state_polling_thread(self):
         """Background thread to poll HA states and update LEDs"""
         logger.info("Starting state polling (interval: %ss)", POLL_INTERVAL)
         while self.running:
+            self._write_heartbeat()
             try:
                 self.idle_manager.check_status()  # Check for idle timeout
                 self.update_led_states()

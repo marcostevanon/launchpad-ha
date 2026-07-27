@@ -46,6 +46,13 @@ STANDBY_PREVIEW_DURATION = float(
     os.getenv("LAUNCHPAD_STANDBY_PREVIEW_DURATION", "120.0")
 )
 
+# Deployment identity and liveness. The deploy script waits for the heartbeat
+# to carry the new release id before it considers a release healthy; `launchctl
+# print` cannot tell it whether Home Assistant and the Launchpad are actually up.
+RELEASE_ID = os.getenv("LAUNCHPAD_RELEASE_ID", "dev")
+HEARTBEAT_FILE = os.getenv("LAUNCHPAD_HEARTBEAT_FILE", "")
+HEARTBEAT_INTERVAL = float(os.getenv("LAUNCHPAD_HEARTBEAT_INTERVAL", "5.0"))
+
 LAUNCHPAD_ROTATION = int(os.getenv("LAUNCHPAD_ROTATION", "180"))
 
 if LAUNCHPAD_ROTATION not in {0, 90, 180, 270}:
