@@ -1,24 +1,20 @@
 # Next up
 
 ## Button map
-- Repoint pads 55/56/57 — `media_player.studio_speaker` has been unavailable
-  since 2026-07-22, and its volume pads could never have worked (the entity has
-  no `VOLUME_SET`). The living room TV is unmapped and supports both volume and
-  power.
-- Repoint pads 45/46/47 to `media_player.bathroom_speaker` rather than the Cast
-  entity for the same device, which reports `off` when idle and has no
-  next/prev. Verify which entity actually moves when playback starts first.
-- See `docs/button-map-proposal.md` for the full analysis and proposed layout.
+- Confirm which entity actually moves for the bathroom Nest Mini when playback
+  starts — Google Assistant voice drives the Cast entity, Music Assistant drives
+  `media_player.bathroom_speaker`. Pads 45/46/47 now use the latter.
+- Pads 51-54 are held for a `climate.` entity: `midea_ac_lan` is installed but
+  currently exposes none.
+- See `docs/button-map-proposal.md` for the full analysis.
 
 ## Small features worth having
-- Render `unavailable` differently from `off`. They are both amber today, so a
-  bulb killed at the wall switch looks identical to one that is simply off.
 - A `status.<entity>` mapping form: press does nothing, the LED reflects state.
   The plant pads already work this way as a hardcoded special case. Would
-  unlock low battery, humidifier overload, pending updates, shopping list.
+  unlock low battery (`sensor.switch_bedroom_battery` is at 10%), humidifier
+  overload, pending updates, shopping list.
 - `button.press` support, for things like "save the current track".
-- `media_player.turn_on` when the player is off and supports it, so a TV pad can
-  actually power it on instead of doing nothing.
+- `next.` / `prev.` for the Sonos, which supports both.
 - Generalise the standby notification indicator beyond plants.
 
 ## Error handling
@@ -63,6 +59,14 @@
 ## Extras
 - Volume up/down pads
 - Disco mode
+
+## Button map
+- Reclaimed pads 55/56/57 from `media_player.studio_speaker`, unavailable since
+  2026-07-22 and without VOLUME_SET, for the living room TV
+- Pad 58 controls the Sonos TV autoplay switch
+- Pads 45/46/47 moved to `media_player.bathroom_speaker`
+- `unavailable` renders as dim grey rather than looking identical to off
+- Media players that advertise TURN_ON can be powered on from their pad
 
 ## Tech debt
 - Separated button configuration, LED rendering and action handling

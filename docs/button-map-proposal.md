@@ -1,7 +1,13 @@
 # Button map proposal
 
 Reviewed against a live `GET /api/states` (430 entities) and `GET /api/services`
-pulled 2026-07-27. Nothing here has been applied — this is for review.
+pulled 2026-07-27.
+
+> **Status:** the mapping changes below (pads 55/56/57, 58, 45/46/47) are
+> **applied**, as are the distinct `unavailable` colour and `media_player.turn_on`
+> support. The remaining suggestions — a `status.<entity>` mapping form,
+> `button.press`, `next.`/`prev.`, and the structural notes at the end — are
+> still open. See `TODO.md`.
 
 ## What is actually controllable
 

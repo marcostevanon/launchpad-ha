@@ -27,12 +27,19 @@ BUTTON_MAP: dict[int, str] = {
     65: "media_player.living_room_sonos",
     66: "volume_down.media_player.living_room_sonos",
     67: "volume_up.media_player.living_room_sonos",
-    55: "media_player.studio_speaker",
-    56: "volume_down.media_player.studio_speaker",
-    57: "volume_up.media_player.studio_speaker",
-    45: "media_player.nestmini7849",
-    46: "volume_down.media_player.nestmini7849",
-    47: "volume_up.media_player.nestmini7849",
+    # Each media row is one device: play/pause, volume down, volume up.
+    # Was media_player.studio_speaker, unavailable since 2026-07-22 and without
+    # VOLUME_SET, so 56/57 could never have worked even when it was online.
+    55: "media_player.living_room_tv",
+    56: "volume_down.media_player.living_room_tv",
+    57: "volume_up.media_player.living_room_tv",
+    58: "switch.sonos_bookshelf_tv_autoplay",
+    # Was media_player.nestmini7849, the Cast entity for this same Nest Mini.
+    # This one keeps reporting `idle` rather than dropping to `off`, and it
+    # supports next/previous track.
+    45: "media_player.bathroom_speaker",
+    46: "volume_down.media_player.bathroom_speaker",
+    47: "volume_up.media_player.bathroom_speaker",
     35: "script.vinyl_play_on_sonos",
     36: "script.vinyl_stop",
     # plants
