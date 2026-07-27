@@ -23,17 +23,16 @@ BUTTON_MAP: dict[int, str] = {
     76: "scene.living_room_red",
     77: "scene.living_room_1",
     78: "disco_toggle",
-    # media
+    # media -- each row is one device: play/pause, volume down, volume up.
+    #
+    # Row 5 is deliberately empty. It briefly held media_player.living_room_tv,
+    # but the TV is controlled from a phone in practice, and the row lit four
+    # pads for something never pressed. Before that it held
+    # media_player.studio_speaker, unavailable since 2026-07-22 and without
+    # VOLUME_SET, so those volume pads could never have worked at all.
     65: "media_player.living_room_sonos",
     66: "volume_down.media_player.living_room_sonos",
     67: "volume_up.media_player.living_room_sonos",
-    # Each media row is one device: play/pause, volume down, volume up.
-    # Was media_player.studio_speaker, unavailable since 2026-07-22 and without
-    # VOLUME_SET, so 56/57 could never have worked even when it was online.
-    55: "media_player.living_room_tv",
-    56: "volume_down.media_player.living_room_tv",
-    57: "volume_up.media_player.living_room_tv",
-    58: "switch.sonos_bookshelf_tv_autoplay",
     # Was media_player.nestmini7849, the Cast entity for this same Nest Mini.
     # This one keeps reporting `idle` rather than dropping to `off`, and it
     # supports next/previous track.
