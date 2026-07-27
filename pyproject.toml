@@ -16,3 +16,9 @@ dependencies = [
 
 [project.scripts]
 ha-launchpad = "ha_launchpad.cli:main"
+
+[tool.pytest.ini_options]
+# Modules import as `src.ha_launchpad.*`, so the repo root must be importable
+# regardless of how pytest is invoked (bare `pytest`, VS Code test explorer, ...).
+pythonpath = ["."]
+testpaths = ["tests"]
