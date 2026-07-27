@@ -9,6 +9,12 @@ from ha_launchpad.infrastructure.midi.interface import MidiBackend
 
 logger = logging.getLogger(__name__)
 
+# Home Assistant states meaning "this device cannot be reached right now", as
+# opposed to "it is switched off". Wi-Fi bulbs killed at a wall switch report
+# `unavailable`, and rendering that as plain off hides the difference.
+UNAVAILABLE_STATES = frozenset({"unavailable", "unknown"})
+UNAVAILABLE_COLOR = "gray_2"
+
 
 class LEDManager:
     def __init__(
@@ -122,6 +128,10 @@ class LEDManager:
         state = state_data.get("state", "unknown")
         domain = entity_id.split(".")[0]
 
+        # Offline is not the same as off, and should not look like it.
+        if state in UNAVAILABLE_STATES:
+            return UNAVAILABLE_COLOR, 0
+
         if domain in ["light", "switch"]:
             if state == "on":
                 if domain == "light" and "attributes" in state_data:
@@ -140,8 +150,6 @@ class LEDManager:
                 return "cyan_0", 2
             if state == "paused":
                 return "amber_1", 0
-            if "nestmini" in entity_id or "studio_speaker" in entity_id:
-                return "off", 0
             return "amber_1", 0
 
         if domain == "plant":
@@ -155,12 +163,19 @@ class LEDManager:
         return "red_2", 0
 
     def _get_volume_button_color(self, entity_id: str, state_map: dict[str, Any]):
+        """Colour a volume pad after the player it controls."""
         target = entity_id.split(".", 1)[1]
-        if "nestmini" in target or "studio_speaker" in target:
-            state = state_map.get(target)
-            if state and state.get("state") in ["playing", "paused"]:
-                return "purple_1", 0
-            return "off", 0
+        state_data = state_map.get(target)
+
+        if not state_data or state_data.get("state") in UNAVAILABLE_STATES:
+            return UNAVAILABLE_COLOR, 0
+
+        # The pad can only do something if the player reports a level to
+        # adjust. A TV that is off has no volume_level, so the service call
+        # would just fail -- show that rather than a lit, dead pad.
+        if state_data.get("attributes", {}).get("volume_level") is None:
+            return UNAVAILABLE_COLOR, 0
+
         return "purple_1", 0
 
     def _get_dimmed_color(self, attributes: dict):

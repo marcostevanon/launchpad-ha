@@ -101,3 +101,64 @@ def test_outage_warning_rearms_after_recovery(led_manager, caplog):
 
     warnings = [r for r in caplog.records if "No states returned" in r.message]
     assert len(warnings) == 2
+
+
+def test_unavailable_is_not_rendered_as_off():
+    """A bulb killed at the wall switch reports `unavailable`. It used to be
+    coloured exactly like one that was simply switched off."""
+    disco = MagicMock()
+    disco.active = False
+    lm = LEDManager(MagicMock(), MagicMock(), {81: "light.a"}, disco)
+    lm.ha_client.get_all_states.return_value = [
+        {"entity_id": "light.a", "state": "unavailable", "attributes": {}}
+    ]
+
+    changes, _ = lm.update_all(dry_run=False)
+
+    assert changes == [(81, "gray_2", 0)]
+
+
+def test_volume_pad_greys_out_when_its_player_is_unavailable():
+    disco = MagicMock()
+    disco.active = False
+    lm = LEDManager(MagicMock(), MagicMock(), {66: "volume_up.media_player.x"}, disco)
+    lm.ha_client.get_all_states.return_value = [
+        {"entity_id": "media_player.x", "state": "unavailable", "attributes": {}}
+    ]
+
+    changes, _ = lm.update_all(dry_run=False)
+
+    assert changes == [(66, "gray_2", 0)]
+
+
+def test_volume_pad_greys_out_when_the_player_reports_no_level():
+    """A TV that is off has no volume_level, so the service call would fail."""
+    disco = MagicMock()
+    disco.active = False
+    lm = LEDManager(
+        MagicMock(), MagicMock(), {56: "volume_down.media_player.tv"}, disco
+    )
+    lm.ha_client.get_all_states.return_value = [
+        {"entity_id": "media_player.tv", "state": "off", "attributes": {}}
+    ]
+
+    changes, _ = lm.update_all(dry_run=False)
+
+    assert changes == [(56, "gray_2", 0)]
+
+
+def test_volume_pad_is_active_when_a_level_is_reported():
+    disco = MagicMock()
+    disco.active = False
+    lm = LEDManager(MagicMock(), MagicMock(), {56: "volume_down.media_player.x"}, disco)
+    lm.ha_client.get_all_states.return_value = [
+        {
+            "entity_id": "media_player.x",
+            "state": "idle",
+            "attributes": {"volume_level": 0.4},
+        }
+    ]
+
+    changes, _ = lm.update_all(dry_run=False)
+
+    assert changes == [(56, "purple_1", 0)]
