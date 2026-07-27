@@ -1,0 +1,31 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v9
+        with:
+          enable-cache: true
+
+      # --locked fails if uv.lock is stale, rather than quietly re-resolving.
+      # uv provisions the interpreter from .python-version, so no setup-python.
+      - name: Install dependencies
+        run: uv sync --locked
+
+      - name: Lint
+        run: uv run ruff check --output-format=github
+
+      - name: Format check
+        run: uv run ruff format --check
+
+      - name: Test
+        run: uv run pytest

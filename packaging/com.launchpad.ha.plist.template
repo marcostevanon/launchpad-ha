@@ -1,0 +1,86 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!--
+  Rendered by scripts/deploy.sh: __BASE__ and __LOGDIR__ are substituted with
+  absolute paths for the target user. Do not install this file directly.
+
+  This stays a LaunchAgent rather than a LaunchDaemon: CoreMIDI is reached
+  through the per-user GUI bootstrap namespace, and a daemon cannot talk to
+  MIDIServer. The trade-off is that it only loads after a GUI login.
+-->
+<plist version="1.0">
+  <dict>
+    <key>Label</key>
+    <string>com.launchpad.ha</string>
+
+    <!-- A stable wrapper, not a release path, so this file never changes
+         between deploys and reloads can use `kickstart -k`. -->
+    <key>ProgramArguments</key>
+    <array>
+      <string>__BASE__/bin/run</string>
+    </array>
+
+    <key>WorkingDirectory</key>
+    <string>__BASE__/current</string>
+
+    <key>RunAtLoad</key>
+    <true/>
+
+    <!-- This service should never voluntarily exit. -->
+    <key>KeepAlive</key>
+    <true/>
+
+    <!-- launchd has no exponential backoff; this is the only throttle. The
+         default of 10s is harsh when the Launchpad is simply unplugged. -->
+    <key>ThrottleInterval</key>
+    <integer>30</integer>
+
+    <!-- With ProcessType unset launchd applies "light resource limits",
+         throttling CPU and I/O. Not what a button-latency-sensitive
+         controller wants. -->
+    <key>ProcessType</key>
+    <string>Standard</string>
+
+    <!-- Time between SIGTERM and SIGKILL: enough to blank the LEDs and hand
+         the Launchpad back to Live mode. -->
+    <key>ExitTimeOut</key>
+    <integer>10</integer>
+
+    <key>EnvironmentVariables</key>
+    <dict>
+      <!-- launchd's own default is /usr/bin:/bin:/usr/sbin:/sbin, with no
+           Homebrew on it. -->
+      <key>PATH</key>
+      <string>/opt/homebrew/bin:/usr/bin:/bin:/usr/sbin:/sbin</string>
+      <!-- Without this, stdout is block-buffered off a tty and logs arrive in
+           8K chunks. -->
+      <key>PYTHONUNBUFFERED</key>
+      <string>1</string>
+      <key>PYTHONDONTWRITEBYTECODE</key>
+      <string>1</string>
+      <key>LANG</key>
+      <string>en_US.UTF-8</string>
+      <!-- A pointer only. launchd requires this plist be world-readable, so
+           the token itself must never appear here. -->
+      <key>HA_ENV_FILE</key>
+      <string>__BASE__/shared/env</string>
+      <key>LAUNCHPAD_HEARTBEAT_FILE</key>
+      <string>__LOGDIR__/heartbeat</string>
+      <key>LOG_FILE</key>
+      <string>__LOGDIR__/app.log</string>
+      <key>LOG_LEVEL</key>
+      <string>INFO</string>
+    </dict>
+
+    <!-- Crash catcher only: tracebacks and C-level output that never reach
+         `logging`. The application rotates app.log itself, because launchd
+         opens these two once at spawn and never reopens them. -->
+    <key>StandardOutPath</key>
+    <string>__LOGDIR__/launchd.out.log</string>
+    <key>StandardErrorPath</key>
+    <string>__LOGDIR__/launchd.err.log</string>
+
+    <key>Umask</key>
+    <string>0077</string>
+  </dict>
+</plist>

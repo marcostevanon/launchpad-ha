@@ -1,0 +1,21 @@
+#!/bin/bash
+#
+# Stable entry point for the LaunchAgent.
+#
+# The plist points here rather than at a release directory, so it stays
+# byte-identical across deploys and `launchctl kickstart -k` is always valid.
+# This resolves `current` at spawn time and hands over with exec, leaving no
+# extra process for launchd to supervise.
+
+set -euo pipefail
+
+BASE="$HOME/.local/launchpad-ha"
+
+# Resolve the symlink now: a deploy that swaps `current` mid-run must not move
+# this process's idea of where its code lives.
+REL="$(cd "$BASE/current" && pwd -P)"
+
+cd "$REL"
+export LAUNCHPAD_RELEASE_ID="$(basename "$REL")"
+
+exec "$REL/.venv/bin/ha-launchpad"

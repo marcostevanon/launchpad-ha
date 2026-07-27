@@ -1,7 +1,7 @@
-from typing import Dict, Set, Any
+from typing import Any
 
 # Launchpad button mapping (pad number -> HA entity)
-BUTTON_MAP: Dict[int, str] = {
+BUTTON_MAP: dict[int, str] = {
     # living room
     81: "light.living_room_spotlights",
     82: "light.bulb_1",
@@ -10,12 +10,10 @@ BUTTON_MAP: Dict[int, str] = {
     71: "switch.living_room_bulbs_string",
     72: "light.living_room_lamp",
     73: "switch.living_room_neon",
-
     # bedroom
     61: "light.bulb_bedroom",
     62: "light.bedroom_lamp",
     63: "switch.humidifier",
-
     # scenes
     85: "scene.i_m_home",
     86: "scene.i_m_leaving",
@@ -25,44 +23,56 @@ BUTTON_MAP: Dict[int, str] = {
     76: "scene.living_room_red",
     77: "scene.living_room_1",
     78: "disco_toggle",
-
     # media
     65: "media_player.living_room_sonos",
     66: "volume_down.media_player.living_room_sonos",
     67: "volume_up.media_player.living_room_sonos",
-
-    55: "media_player.studio_speaker",
-    56: "volume_down.media_player.studio_speaker",
-    57: "volume_up.media_player.studio_speaker",
-
-    45: "media_player.nestmini7849",
-    46: "volume_down.media_player.nestmini7849",
-    47: "volume_up.media_player.nestmini7849",
-
+    # Each media row is one device: play/pause, volume down, volume up.
+    # Was media_player.studio_speaker, unavailable since 2026-07-22 and without
+    # VOLUME_SET, so 56/57 could never have worked even when it was online.
+    55: "media_player.living_room_tv",
+    56: "volume_down.media_player.living_room_tv",
+    57: "volume_up.media_player.living_room_tv",
+    58: "switch.sonos_bookshelf_tv_autoplay",
+    # Was media_player.nestmini7849, the Cast entity for this same Nest Mini.
+    # This one keeps reporting `idle` rather than dropping to `off`, and it
+    # supports next/previous track.
+    45: "media_player.bathroom_speaker",
+    46: "volume_down.media_player.bathroom_speaker",
+    47: "volume_up.media_player.bathroom_speaker",
     35: "script.vinyl_play_on_sonos",
     36: "script.vinyl_stop",
-
     # plants
     17: "plant.monstera",
     18: "plant.pothos",
-    
     # special
     68: "manual_sleep",
 }
 
+# Every addressable pad on the 8x8 grid.
+#
+# In Programmer Mode the Mini MK3 numbers pads `row * 10 + column`, with rows
+# and columns running 1-8 from the bottom left. Iterating a raw `range(128)`
+# instead sweeps in notes that are not pads at all, and rotating those produces
+# negative note numbers the MIDI layer then rejects one by one.
+ALL_PADS: tuple[int, ...] = tuple(
+    row * 10 + col for row in range(1, 9) for col in range(1, 9)
+)
+
 # Special Buttons
 IDLE_MODE_BUTTON_ID = 68
-RESTART_CHORD = (15, 16) # First button then second button
+RESTART_CHORD = (15, 16)  # First button then second button
+RESTART_CHORD_TIMEOUT = 2.0  # Seconds allowed between the two presses
 
 # Pads that should enter color-pick mode when pressed (keys from BUTTON_MAP)
-COLOR_PICK_ENABLED: Set[int] = {81, 82, 83, 84, 62}
+COLOR_PICK_ENABLED: set[int] = {81, 82, 83, 84, 62}
 
 # Pads that should show brightness control (keys from BUTTON_MAP)
-BRIGHTNESS_ENABLED: Set[int] = {81, 82, 83, 84, 72, 61, 62}
+BRIGHTNESS_ENABLED: set[int] = {81, 82, 83, 84, 72, 61, 62}
 
 # Mapping: pad -> brightness level (0.0 to 1.0)
 # These will be shown on row 2 (21-28)
-BRIGHTNESS_PALETTE: Dict[int, float] = {
+BRIGHTNESS_PALETTE: dict[int, float] = {
     21: 0.1,
     22: 0.25,
     23: 0.4,
@@ -75,7 +85,7 @@ BRIGHTNESS_PALETTE: Dict[int, float] = {
 
 # Palette display mapping: map pad -> color name in `COLORS` for non-RGB devices.
 # Use these for lighting pads when RGB SysEx isn't available.
-COLOR_PALETTE: Dict[int, Dict[str, Any]] = {
+COLOR_PALETTE: dict[int, dict[str, Any]] = {
     41: {"color": "red_1", "rgb": (255, 0, 0)},
     42: {"color": "blue_1", "rgb": (105, 0, 255)},
     43: {"color": "yellow_3", "rgb": (255, 152, 57)},
@@ -86,7 +96,7 @@ COLOR_PALETTE: Dict[int, Dict[str, Any]] = {
     34: {"color": "white", "rgb": (255, 214, 161)},
 }
 
-COLORS: Dict[str, int] = {
+COLORS: dict[str, int] = {
     # 0–7
     "off": 0,
     "gray_1": 1,
@@ -99,8 +109,6 @@ COLORS: Dict[str, int] = {
     # 8–15
     "orange_0": 8,
     "orange_1": 9,
-    "orange_2": 10,
-    "orange_3": 11,
     "yellow_0": 12,
     "yellow_1": 13,
     "yellow_2": 14,
@@ -134,6 +142,9 @@ COLORS: Dict[str, int] = {
     "pink_2": 57,
     "pink_3": 58,
     "pink_4": 59,
+    # Out of sequence with the 8-15 orange block, but these are the velocities
+    # `orange_2` and `orange_3` have always resolved to: the names were defined
+    # twice and the later pair silently won.
     "orange_2": 60,
     "orange_3": 61,
     # extra

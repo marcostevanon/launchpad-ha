@@ -1,18 +1,54 @@
-[build-system]
-requires = ["setuptools>=61.0","wheel"]
-build-backend = "setuptools.build_meta"
-
 [project]
 name = "ha-launchpad"
 version = "0.1.0"
 description = "Novation Launchpad to Home Assistant bridge"
+readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [
-	"mido>=1.2.10",
-	"requests>=2.0",
-	"python-dotenv>=1.0",
-	"python-rtmidi>=1.4.0",
+    # The rtmidi extra pulls in python-rtmidi, so the backend requirement is
+    # declared by the library that actually needs it.
+    "mido[ports-rtmidi]>=1.3.3",
+    # Imported at module scope by the MIDI backend for USB liveness checks.
+    # This was missing entirely, despite being required to start.
+    "pyusb>=1.3.1",
+    "python-dotenv>=1.2",
+    "requests>=2.32",
+]
+
+[dependency-groups]
+dev = [
+    "pytest>=9.1",
+    "requests-mock>=1.12",
+    "ruff>=0.16,<0.17",
 ]
 
 [project.scripts]
 ha-launchpad = "ha_launchpad.cli:main"
+
+[build-system]
+requires = ["uv_build>=0.11.32,<0.12"]
+build-backend = "uv_build"
+
+[tool.uv]
+# Never silently fall back to whatever `python3` happens to be. Production was
+# running 3.9.6 from Apple's Command Line Tools this way.
+python-preference = "only-managed"
+
+[tool.ruff.lint]
+# Ruff 0.16 turned its full default set on (413 rules). Setting `select` here
+# would narrow that rather than widen it, so only carve out what is deliberate.
+ignore = [
+    # Broad `except Exception` is intentional around the MIDI and Home
+    # Assistant boundaries: a failed LED write must never take the loop down.
+    "BLE001",
+    "S110",
+]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**" = ["S101"] # assert is the whole point
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+# Tests import the installed package rather than reaching into the source
+# tree, which is the point of the src layout. No sys.path manipulation.
+addopts = ["--import-mode=importlib"]

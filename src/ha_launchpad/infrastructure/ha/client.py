@@ -1,60 +1,137 @@
 """Home Assistant API wrapper used by the Launchpad controller."""
 
-from typing import Dict, Any, Optional
-import time
-import requests
 import logging
+from typing import Any
 
-from src.ha_launchpad.config.settings import (
-    HA_REQUEST_RETRY_DELAY,
+import requests
+from requests.adapters import HTTPAdapter
+from urllib3.util.retry import Retry
+
+from ha_launchpad.config.settings import (
     HA_REQUEST_MAX_DELAY,
     VOLUME_STEP,
 )
 
 logger = logging.getLogger(__name__)
 
+# (connect, read) timeouts. The read budget for polling has to fit inside the
+# poll interval, otherwise one slow response stalls every LED update behind it.
+POLL_TIMEOUT = (2.0, 3.0)
+# Service calls block until Home Assistant has finished running them, which for
+# a cloud-backed light or a speaker is legitimately slow.
+SERVICE_TIMEOUT = (2.0, 10.0)
+
+# Transient server-side conditions; a restarting Home Assistant behind a proxy
+# typically shows up as 502/503.
+RETRYABLE_STATUSES = (408, 429, 500, 502, 503, 504)
+
+# MediaPlayerEntityFeature.TURN_ON. Not every player can be powered on
+# remotely, and calling the service on one that cannot just fails.
+MEDIA_PLAYER_TURN_ON = 128
+
+
+class HomeAssistantUnauthorized(Exception):
+    """The token was rejected. No amount of retrying will fix it."""
+
 
 class HomeAssistantClient:
     def __init__(self, url: str, token: str):
         self.url = url.rstrip("/")
-        self.headers = {
-            "Authorization": f"Bearer {token}",
-            "Content-Type": "application/json",
-        }
         self.session = requests.Session()
+        self.session.headers.update(
+            {
+                "Authorization": f"Bearer {token}",
+                "Accept": "application/json",
+            }
+        )
 
-    def _request_with_retry(
-        self, method: str, endpoint: str, **kwargs
-    ) -> Optional[requests.Response]:
-        """Perform an HTTP request with retry/backoff."""
-        delay = HA_REQUEST_RETRY_DELAY
+        retry = Retry(
+            total=2,
+            connect=2,
+            read=2,
+            status=2,
+            backoff_factor=0.3,
+            backoff_max=HA_REQUEST_MAX_DELAY,
+            backoff_jitter=0.2,
+            status_forcelist=RETRYABLE_STATUSES,
+            # Read and status retries are gated by method. A POST that timed
+            # out on read may well have run the service already, and replaying
+            # `light.toggle` would flip the light straight back. Connect
+            # failures are not gated, because there the request provably never
+            # reached Home Assistant.
+            allowed_methods=frozenset(["GET"]),
+            respect_retry_after_header=True,
+            raise_on_status=False,
+        )
+        adapter = HTTPAdapter(max_retries=retry, pool_connections=2, pool_maxsize=4)
+        self.session.mount("http://", adapter)
+        self.session.mount("https://", adapter)
 
-        while True:
-            try:
-                resp = self.session.request(
-                    method, endpoint, headers=self.headers, timeout=5, **kwargs
-                )
-                resp.raise_for_status()
-                return resp
-            except requests.exceptions.HTTPError as e:
-                # Don't retry 404s - entity doesn't exist
-                if e.response.status_code == 404:
-                    logger.debug("Entity not found (404). Error: %s", e)
-                    return None
-            except requests.exceptions.RequestException as e:
-                logger.warning(
-                    "Connection to Home Assistant failed. Retrying... Error: %s", e
-                )
-                time.sleep(min(delay, HA_REQUEST_MAX_DELAY))
-                delay = min(delay * 2, HA_REQUEST_MAX_DELAY)
-                continue
+        # Whether we are currently in an outage, so a Home Assistant restart
+        # reports once rather than on every poll for as long as it lasts.
+        self._offline = False
+
+    def _report_unreachable(self, method: str, endpoint: str, error) -> None:
+        if self._offline:
+            logger.debug("Still unreachable (%s %s): %s", method, endpoint, error)
+            return
+
+        logger.warning(
+            "Home Assistant unreachable (%s %s): %s", method, endpoint, error
+        )
+        self._offline = True
+
+    def _report_reachable(self) -> None:
+        if self._offline:
+            logger.info("Home Assistant reachable again")
+            self._offline = False
+
+    def _request(
+        self, method: str, endpoint: str, *, timeout, **kwargs
+    ) -> requests.Response | None:
+        """Perform one logical request.
+
+        Transport-level retries and backoff are handled inside urllib3, so this
+        always terminates. Returns None when the request could not be
+        completed; raises only when the failure is not worth retrying at all.
+        """
+        try:
+            resp = self.session.request(method, endpoint, timeout=timeout, **kwargs)
+        except requests.exceptions.RequestException as e:
+            self._report_unreachable(method, endpoint, e)
+            return None
+
+        self._report_reachable()
+
+        if resp.status_code == 401:
+            # Retrying a rejected token achieves nothing and, if Home Assistant
+            # has IP banning enabled, will eventually lock this host out.
+            raise HomeAssistantUnauthorized(
+                f"Home Assistant rejected the access token: {resp.text[:200]}"
+            )
+
+        if resp.status_code == 404:
+            logger.debug("Not found (404): %s", endpoint)
+            return None
+
+        if resp.status_code >= 400:
+            logger.error(
+                "Home Assistant returned %s for %s %s: %s",
+                resp.status_code,
+                method,
+                endpoint,
+                resp.text[:200],
+            )
+            return None
+
+        return resp
 
     def call_service(self, domain: str, service: str, entity_id: str, **kwargs) -> bool:
         """Call a Home Assistant service"""
         endpoint = f"{self.url}/api/services/{domain}/{service}"
         data = {"entity_id": entity_id, **kwargs}
 
-        resp = self._request_with_retry("POST", endpoint, json=data)
+        resp = self._request("POST", endpoint, timeout=SERVICE_TIMEOUT, json=data)
         if resp is None:
             logger.error(
                 "Error calling service %s.%s for %s", domain, service, entity_id
@@ -64,23 +141,43 @@ class HomeAssistantClient:
         logger.info("Called %s.%s for %s", domain, service, entity_id)
         return True
 
-    def get_all_states(self) -> list[Dict[str, Any]]:
-        """Fetch all entity states from Home Assistant in one call."""
+    def is_available(self) -> bool:
+        """Report whether the API answers and accepts our token.
+
+        `GET /api/` is Home Assistant's own health endpoint, so unlike probing
+        an entity this does not depend on anything in particular existing.
+        """
+        resp = self._request("GET", f"{self.url}/api/", timeout=POLL_TIMEOUT)
+        if resp is None:
+            return False
+
+        try:
+            return resp.json().get("message") == "API running."
+        except ValueError:
+            logger.error("Invalid JSON response from /api/")
+            return False
+
+    def get_all_states(self) -> list[dict[str, Any]]:
+        """Fetch all entity states from Home Assistant in one call.
+
+        Returns an empty list if the states could not be fetched, which callers
+        must treat as "unknown" rather than "nothing is on".
+        """
         endpoint = f"{self.url}/api/states"
-        resp = self._request_with_retry("GET", endpoint)
+        resp = self._request("GET", endpoint, timeout=POLL_TIMEOUT)
         if resp is None:
             return []
-            
+
         try:
             return resp.json()
         except ValueError:
             logger.error("Invalid JSON response from /api/states")
             return []
 
-    def get_state(self, entity_id: str) -> Dict[str, Any]:
+    def get_state(self, entity_id: str) -> dict[str, Any]:
         """Get the state of an entity. Returns 'not_found' if entity doesn't exist."""
         endpoint = f"{self.url}/api/states/{entity_id}"
-        resp = self._request_with_retry("GET", endpoint)
+        resp = self._request("GET", endpoint, timeout=POLL_TIMEOUT)
         if resp is None:
             return {"error": "not_found"}
 
@@ -103,15 +200,34 @@ class HomeAssistantClient:
         elif domain == "script":
             return self.call_service("script", "turn_on", entity_id)
         elif domain == "media_player":
-            state_data = self.get_state(entity_id)
-            if state_data and state_data.get("state") in ["off", "unavailable"]:
-                logger.debug("Media player %s is %s - skipping play/pause command", entity_id, state_data.get("state"))
-                return True
-            # For all media players, use play/pause toggle when active
-            return self.call_service("media_player", "media_play_pause", entity_id)
+            return self._toggle_media_player(entity_id)
         else:
             logger.error("Unknown domain: %s", domain)
             return False
+
+    def _toggle_media_player(self, entity_id: str) -> bool:
+        """Play/pause an active player, or power on one that is off.
+
+        A pad for a switched-off TV that does nothing at all is not much use,
+        so if the player advertises TURN_ON, use it.
+        """
+        state_data = self.get_state(entity_id)
+        state = state_data.get("state") if state_data else None
+
+        if state == "unavailable":
+            logger.debug("Media player %s is unavailable - nothing to do", entity_id)
+            return True
+
+        if state == "off":
+            features = state_data.get("attributes", {}).get("supported_features", 0)
+            if features & MEDIA_PLAYER_TURN_ON:
+                return self.call_service("media_player", "turn_on", entity_id)
+            logger.debug(
+                "Media player %s is off and cannot be turned on remotely", entity_id
+            )
+            return True
+
+        return self.call_service("media_player", "media_play_pause", entity_id)
 
     def volume_up(self, entity_id: str) -> bool:
         """Increase volume of a media player by VOLUME_STEP."""
@@ -134,4 +250,6 @@ class HomeAssistantClient:
             return False
 
         new_volume = max(0.0, min(1.0, current_volume + delta))
-        return self.call_service("media_player", "volume_set", entity_id, volume_level=new_volume)
+        return self.call_service(
+            "media_player", "volume_set", entity_id, volume_level=new_volume
+        )
