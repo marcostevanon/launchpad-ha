@@ -109,8 +109,6 @@ COLORS: Dict[str, int] = {
     # 8–15
     "orange_0": 8,
     "orange_1": 9,
-    "orange_2": 10,
-    "orange_3": 11,
     "yellow_0": 12,
     "yellow_1": 13,
     "yellow_2": 14,
@@ -144,6 +142,9 @@ COLORS: Dict[str, int] = {
     "pink_2": 57,
     "pink_3": 58,
     "pink_4": 59,
+    # Out of sequence with the 8-15 orange block, but these are the velocities
+    # `orange_2` and `orange_3` have always resolved to: the names were defined
+    # twice and the later pair silently won.
     "orange_2": 60,
     "orange_3": 61,
     # extra
