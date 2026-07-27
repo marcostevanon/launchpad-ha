@@ -1,6 +1,6 @@
 import pytest
 import requests_mock
-from src.ha_launchpad.infrastructure.ha.client import (
+from ha_launchpad.infrastructure.ha.client import (
     HomeAssistantClient,
     HomeAssistantUnauthorized,
 )

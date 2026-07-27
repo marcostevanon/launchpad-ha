@@ -2,10 +2,10 @@ import logging
 import random
 from typing import Dict, Set, Any
 
-from src.ha_launchpad.config.settings import DISCO_LIGHTS
-from src.ha_launchpad.infrastructure.midi.interface import MidiBackend
-from src.ha_launchpad.infrastructure.ha.client import HomeAssistantClient
-from src.ha_launchpad.features.disco import DiscoMode
+from ha_launchpad.config.settings import DISCO_LIGHTS
+from ha_launchpad.infrastructure.midi.interface import MidiBackend
+from ha_launchpad.infrastructure.ha.client import HomeAssistantClient
+from ha_launchpad.features.disco import DiscoMode
 
 logger = logging.getLogger(__name__)
 

@@ -7,7 +7,7 @@ import requests
 from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
 
-from src.ha_launchpad.config.settings import (
+from ha_launchpad.config.settings import (
     HA_REQUEST_MAX_DELAY,
     VOLUME_STEP,
 )

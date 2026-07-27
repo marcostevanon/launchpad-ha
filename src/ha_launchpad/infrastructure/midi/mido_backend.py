@@ -5,12 +5,12 @@ from typing import Optional
 import logging
 import mido
 
-from src.ha_launchpad.config.settings import (
+from ha_launchpad.config.settings import (
     LAUNCHPAD_IDENT,
     LAUNCHPAD_VENDOR,
     LAUNCHPAD_PRODUCT,
 )
-from src.ha_launchpad.config.mapping import COLORS
+from ha_launchpad.config.mapping import COLORS
 from .interface import MidiBackend
 
 logger = logging.getLogger(__name__)

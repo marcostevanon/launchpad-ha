@@ -97,7 +97,7 @@ wheels = [
 [[package]]
 name = "ha-launchpad"
 version = "0.1.0"
-source = { virtual = "." }
+source = { editable = "." }
 dependencies = [
     { name = "mido", extra = ["ports-rtmidi"] },
     { name = "python-dotenv" },

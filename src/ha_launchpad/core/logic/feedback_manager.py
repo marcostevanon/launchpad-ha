@@ -1,7 +1,7 @@
 import time
 import logging
 from typing import Optional
-from src.ha_launchpad.infrastructure.midi.interface import MidiBackend
+from ha_launchpad.infrastructure.midi.interface import MidiBackend
 
 logger = logging.getLogger(__name__)
 

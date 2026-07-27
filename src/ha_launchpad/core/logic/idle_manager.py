@@ -2,9 +2,9 @@ import time
 import logging
 from typing import Dict, Iterable, Optional, Tuple
 
-from src.ha_launchpad.config.settings import IDLE_TIMEOUT, STANDBY_PREVIEW_DURATION
-from src.ha_launchpad.config.mapping import ALL_PADS, IDLE_MODE_BUTTON_ID
-from src.ha_launchpad.infrastructure.midi.interface import MidiBackend
+from ha_launchpad.config.settings import IDLE_TIMEOUT, STANDBY_PREVIEW_DURATION
+from ha_launchpad.config.mapping import ALL_PADS, IDLE_MODE_BUTTON_ID
+from ha_launchpad.infrastructure.midi.interface import MidiBackend
 
 logger = logging.getLogger(__name__)
 

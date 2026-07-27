@@ -1,7 +1,7 @@
 import unittest
 from unittest.mock import MagicMock, patch
-from src.ha_launchpad.core.logic.input_handler import InputHandler
-from src.ha_launchpad.config.mapping import RESTART_CHORD, RESTART_CHORD_TIMEOUT
+from ha_launchpad.core.logic.input_handler import InputHandler
+from ha_launchpad.config.mapping import RESTART_CHORD, RESTART_CHORD_TIMEOUT
 
 class TestInputHandlerRestart(unittest.TestCase):
     def setUp(self):
@@ -39,7 +39,7 @@ class TestInputHandlerRestart(unittest.TestCase):
 
     def test_restart_chord_expires_after_the_timeout(self):
         with patch(
-            "src.ha_launchpad.core.logic.input_handler.time.monotonic"
+            "ha_launchpad.core.logic.input_handler.time.monotonic"
         ) as monotonic:
             monotonic.return_value = 0.0
             self.handler.handle_press(RESTART_CHORD[0], is_idle=True)
@@ -52,7 +52,7 @@ class TestInputHandlerRestart(unittest.TestCase):
 
     def test_restart_chord_within_the_timeout_still_fires(self):
         with patch(
-            "src.ha_launchpad.core.logic.input_handler.time.monotonic"
+            "ha_launchpad.core.logic.input_handler.time.monotonic"
         ) as monotonic:
             monotonic.return_value = 0.0
             self.handler.handle_press(RESTART_CHORD[0], is_idle=True)

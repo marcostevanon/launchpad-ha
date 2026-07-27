@@ -4,7 +4,7 @@ import random
 import logging
 from typing import List
 
-from src.ha_launchpad.config.settings import DISCO_LIGHTS, DISCO_SPEED
+from ha_launchpad.config.settings import DISCO_LIGHTS, DISCO_SPEED
 
 logger = logging.getLogger(__name__)
 

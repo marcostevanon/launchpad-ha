@@ -4,7 +4,7 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from src.ha_launchpad.core.controller import LaunchpadController
+from ha_launchpad.core.controller import LaunchpadController
 
 
 @pytest.fixture(autouse=True)
@@ -38,7 +38,7 @@ def test_exits_non_zero_when_the_launchpad_is_never_found(monkeypatch):
     controller = LaunchpadController(MagicMock(), {}, backend=backend)
 
     monkeypatch.setattr(
-        "src.ha_launchpad.core.controller.time.sleep", lambda *_: None
+        "ha_launchpad.core.controller.time.sleep", lambda *_: None
     )
 
     with pytest.raises(SystemExit) as exit_info:

@@ -1,7 +1,7 @@
 import logging
 from typing import Optional, Set, Any
 
-from src.ha_launchpad.config.mapping import COLOR_PALETTE, BRIGHTNESS_PALETTE
+from ha_launchpad.config.mapping import COLOR_PALETTE, BRIGHTNESS_PALETTE
 
 logger = logging.getLogger(__name__)
 

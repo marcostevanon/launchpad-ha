@@ -40,7 +40,7 @@ start_controller() {
 
 	# LOG_FILE="" forces logging_config to use the stderr handler instead of
 	# writing to the file the daemon uses, so output lands in this terminal.
-	LOG_FILE="" "$PYTHON" -m src.ha_launchpad.cli &
+	LOG_FILE="" .venv/bin/ha-launchpad &
 	child_pid=$!
 }
 

@@ -1,8 +1,8 @@
 import ast
 from pathlib import Path
 
-from src.ha_launchpad.config import mapping as mapping_module
-from src.ha_launchpad.config.mapping import BUTTON_MAP, COLOR_PICK_ENABLED, COLORS, COLOR_PALETTE
+from ha_launchpad.config import mapping as mapping_module
+from ha_launchpad.config.mapping import BUTTON_MAP, COLOR_PICK_ENABLED, COLORS, COLOR_PALETTE
 
 def test_button_map_keys_are_integers():
     for key in BUTTON_MAP.keys():

@@ -4,20 +4,20 @@
 import time
 import logging
 
-from src.ha_launchpad.config.settings import (
+from ha_launchpad.config.settings import (
     HA_URL,
     HA_TOKEN,
     HA_CONNECT_RETRY_DELAY,
     HA_CONNECT_MAX_DELAY,
 )
-from src.ha_launchpad.config.mapping import BUTTON_MAP
-from src.ha_launchpad.infrastructure.midi.mido_backend import MidoBackend
-from src.ha_launchpad.infrastructure.ha.client import (
+from ha_launchpad.config.mapping import BUTTON_MAP
+from ha_launchpad.infrastructure.midi.mido_backend import MidoBackend
+from ha_launchpad.infrastructure.ha.client import (
     HomeAssistantClient,
     HomeAssistantUnauthorized,
 )
-from src.ha_launchpad.core.controller import LaunchpadController
-from src.ha_launchpad.logging_config import configure_logging
+from ha_launchpad.core.controller import LaunchpadController
+from ha_launchpad.logging_config import configure_logging
 
 
 logger = logging.getLogger(__name__)

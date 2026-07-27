@@ -1,7 +1,7 @@
 import pytest
 from unittest.mock import MagicMock
 
-from src.ha_launchpad.core.logic.led_manager import LEDManager
+from ha_launchpad.core.logic.led_manager import LEDManager
 
 
 @pytest.fixture

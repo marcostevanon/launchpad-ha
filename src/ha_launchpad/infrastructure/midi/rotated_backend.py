@@ -1,5 +1,5 @@
 from typing import Optional, Any
-from src.ha_launchpad.utils.rotate_pad import rotate_pad, inverse_rotation
+from ha_launchpad.utils.rotate_pad import rotate_pad, inverse_rotation
 from .interface import MidiBackend
 
 class RotatedMidiIn:

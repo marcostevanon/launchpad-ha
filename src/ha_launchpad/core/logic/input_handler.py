@@ -2,16 +2,16 @@ import logging
 import time
 from typing import Dict, Set, Optional, Any
 
-from src.ha_launchpad.config.mapping import (
+from ha_launchpad.config.mapping import (
     COLOR_PICK_ENABLED,
     BRIGHTNESS_ENABLED,
     IDLE_MODE_BUTTON_ID,
     RESTART_CHORD,
     RESTART_CHORD_TIMEOUT,
 )
-from src.ha_launchpad.infrastructure.ha.client import HomeAssistantClient
-from src.ha_launchpad.features.color_picker import ColorPicker
-from src.ha_launchpad.features.disco import DiscoMode
+from ha_launchpad.infrastructure.ha.client import HomeAssistantClient
+from ha_launchpad.features.color_picker import ColorPicker
+from ha_launchpad.features.disco import DiscoMode
 
 logger = logging.getLogger(__name__)
 

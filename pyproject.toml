@@ -21,14 +21,20 @@ dev = [
     "requests-mock>=1.12",
 ]
 
+[project.scripts]
+ha-launchpad = "ha_launchpad.cli:main"
+
+[build-system]
+requires = ["uv_build>=0.11.32,<0.12"]
+build-backend = "uv_build"
+
 [tool.uv]
-# Modules still import as `src.ha_launchpad.*`, so there is nothing to build
-# yet. Lifted once the package is importable as `ha_launchpad`.
-package = false
 # Never silently fall back to whatever `python3` happens to be. Production was
 # running 3.9.6 from Apple's Command Line Tools this way.
 python-preference = "only-managed"
 
 [tool.pytest.ini_options]
-pythonpath = ["."]
 testpaths = ["tests"]
+# Tests import the installed package rather than reaching into the source
+# tree, which is the point of the src layout. No sys.path manipulation.
+addopts = ["--import-mode=importlib"]

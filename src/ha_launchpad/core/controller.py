@@ -7,7 +7,7 @@ import logging
 import signal
 import sys
 
-from src.ha_launchpad.config.settings import (
+from ha_launchpad.config.settings import (
     LAUNCHPAD_ROTATION,
     LAUNCHPAD_ALIVE_DELAY,
     LAUNCHPAD_RETRY_DELAY,
@@ -15,26 +15,26 @@ from src.ha_launchpad.config.settings import (
     POLL_INTERVAL,
     IDLE_POLL_INTERVAL,
 )
-from src.ha_launchpad.config.mapping import (
+from ha_launchpad.config.mapping import (
     ALL_PADS,
     COLOR_PICK_ENABLED,
     BRIGHTNESS_ENABLED,
 )
-from src.ha_launchpad.infrastructure.midi.interface import MidiBackend
-from src.ha_launchpad.infrastructure.midi.mido_backend import MidoBackend
-from src.ha_launchpad.infrastructure.midi.rotated_backend import RotatedBackend
-from src.ha_launchpad.infrastructure.ha.client import (
+from ha_launchpad.infrastructure.midi.interface import MidiBackend
+from ha_launchpad.infrastructure.midi.mido_backend import MidoBackend
+from ha_launchpad.infrastructure.midi.rotated_backend import RotatedBackend
+from ha_launchpad.infrastructure.ha.client import (
     HomeAssistantClient,
     HomeAssistantUnauthorized,
 )
-from src.ha_launchpad.features.disco import DiscoMode
-from src.ha_launchpad.features.color_picker import ColorPicker
+from ha_launchpad.features.disco import DiscoMode
+from ha_launchpad.features.color_picker import ColorPicker
 
 # New Logic Components
-from src.ha_launchpad.core.logic.led_manager import LEDManager
-from src.ha_launchpad.core.logic.input_handler import InputHandler
-from src.ha_launchpad.core.logic.feedback_manager import FeedbackManager
-from src.ha_launchpad.core.logic.idle_manager import IdleManager
+from ha_launchpad.core.logic.led_manager import LEDManager
+from ha_launchpad.core.logic.input_handler import InputHandler
+from ha_launchpad.core.logic.feedback_manager import FeedbackManager
+from ha_launchpad.core.logic.idle_manager import IdleManager
 
 logger = logging.getLogger(__name__)
 
@@ -202,7 +202,7 @@ class LaunchpadController:
         
         # 3. Idle Logic Check
         if is_idle:
-            from src.ha_launchpad.config.mapping import IDLE_MODE_BUTTON_ID
+            from ha_launchpad.config.mapping import IDLE_MODE_BUTTON_ID
             if note == IDLE_MODE_BUTTON_ID:
                 self.idle_manager.wake_up()
                 # Restore LEDs immediately
@@ -260,7 +260,7 @@ class LaunchpadController:
                 logger.debug("handle_button_press raised", exc_info=True)
             return
 
-        from src.ha_launchpad.config.mapping import IDLE_MODE_BUTTON_ID
+        from ha_launchpad.config.mapping import IDLE_MODE_BUTTON_ID
         if note == IDLE_MODE_BUTTON_ID:
              logger.debug("DEBUG: Manual Sleep Button pressed -> Handling immediately")
              self.handle_button_press(note)
@@ -307,7 +307,7 @@ class LaunchpadController:
         # CASE 3: Normal toggle
         # CRITICAL FIX: Do NOT toggle special Idle/Sleep button on release
         # This prevents "Wake Up (Press) -> Sleep (Release)" loop.
-        from src.ha_launchpad.config.mapping import IDLE_MODE_BUTTON_ID
+        from ha_launchpad.config.mapping import IDLE_MODE_BUTTON_ID
         if note == IDLE_MODE_BUTTON_ID:
             return
 

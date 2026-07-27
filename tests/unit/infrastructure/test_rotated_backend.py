@@ -1,7 +1,7 @@
 import pytest
 from unittest.mock import MagicMock
-from src.ha_launchpad.config.mapping import ALL_PADS
-from src.ha_launchpad.infrastructure.midi.rotated_backend import RotatedBackend
+from ha_launchpad.config.mapping import ALL_PADS
+from ha_launchpad.infrastructure.midi.rotated_backend import RotatedBackend
 
 class MockMsg:
     def __init__(self, note):

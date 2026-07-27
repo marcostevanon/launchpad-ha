@@ -2,8 +2,8 @@ import py
 import pytest
 from unittest.mock import MagicMock, patch
 import time
-from src.ha_launchpad.core.logic.idle_manager import IdleManager
-from src.ha_launchpad.config.mapping import IDLE_MODE_BUTTON_ID
+from ha_launchpad.core.logic.idle_manager import IdleManager
+from ha_launchpad.config.mapping import IDLE_MODE_BUTTON_ID
 
 @pytest.fixture
 def idle_manager():
@@ -33,7 +33,7 @@ def test_timeout_triggers_idle(idle_manager):
         idle_manager._last_activity_time = 0
         
         # Advance time past threshold (assuming default 1800)
-        from src.ha_launchpad.config.settings import IDLE_TIMEOUT
+        from ha_launchpad.config.settings import IDLE_TIMEOUT
         mock_time.return_value = IDLE_TIMEOUT + 10
         
         idle_manager.check_status()
@@ -43,7 +43,7 @@ def test_wake_up_resets_the_inactivity_timer(idle_manager):
     """Waking must restart the clock. It used to leave `_last_activity_time`
     at its old value, so the next status check saw an elapsed time still over
     the threshold and put the board straight back to sleep."""
-    from src.ha_launchpad.config.settings import IDLE_TIMEOUT
+    from ha_launchpad.config.settings import IDLE_TIMEOUT
 
     with patch('time.time') as mock_time:
         mock_time.return_value = 0
@@ -80,7 +80,7 @@ def test_standby_preview_lights_changed_pads_without_waking(idle_manager):
 
 
 def test_standby_preview_turns_itself_off_when_it_expires(idle_manager):
-    from src.ha_launchpad.config.settings import STANDBY_PREVIEW_DURATION
+    from ha_launchpad.config.settings import STANDBY_PREVIEW_DURATION
 
     idle_manager.backend.is_connected.return_value = True
 
