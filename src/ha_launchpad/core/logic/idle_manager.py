@@ -3,7 +3,7 @@ import logging
 from typing import Optional
 
 from src.ha_launchpad.config.settings import IDLE_TIMEOUT
-from src.ha_launchpad.config.mapping import IDLE_MODE_BUTTON_ID
+from src.ha_launchpad.config.mapping import ALL_PADS, IDLE_MODE_BUTTON_ID
 from src.ha_launchpad.infrastructure.midi.interface import MidiBackend
 
 logger = logging.getLogger(__name__)
@@ -69,7 +69,7 @@ class IdleManager:
     def _clear_all_leds(self):
         # Clear main grid
         if self.backend and self.backend.is_connected():
-            for note in range(128):
+            for note in ALL_PADS:
                 if note != IDLE_MODE_BUTTON_ID:
                      self.backend.send_note(note, "off")
 

@@ -14,7 +14,11 @@ from src.ha_launchpad.config.settings import (
     LAUNCHPAD_MAX_RETRY_DELAY,
     POLL_INTERVAL
 )
-from src.ha_launchpad.config.mapping import COLOR_PICK_ENABLED, BRIGHTNESS_ENABLED
+from src.ha_launchpad.config.mapping import (
+    ALL_PADS,
+    COLOR_PICK_ENABLED,
+    BRIGHTNESS_ENABLED,
+)
 from src.ha_launchpad.infrastructure.midi.interface import MidiBackend
 from src.ha_launchpad.infrastructure.midi.mido_backend import MidoBackend
 from src.ha_launchpad.infrastructure.midi.rotated_backend import RotatedBackend
@@ -106,11 +110,11 @@ class LaunchpadController:
         """Turn off all LEDs"""
         if self.backend and self.backend.is_connected():
             if splash:
-                for note in range(128):
+                for note in ALL_PADS:
                     self.send_note(note=note, color="cyan_1")
                 time.sleep(0.3)
-            for note in range(128):
-                self.send_note(note=note, color="")
+            for note in ALL_PADS:
+                self.send_note(note=note, color="off")
 
     def close_backend(self):
         """Close the MIDI backend"""

@@ -1,4 +1,4 @@
-from typing import Dict, Set, Any
+from typing import Dict, Set, Any, Tuple
 
 # Launchpad button mapping (pad number -> HA entity)
 BUTTON_MAP: Dict[int, str] = {
@@ -49,6 +49,16 @@ BUTTON_MAP: Dict[int, str] = {
     # special
     68: "manual_sleep",
 }
+
+# Every addressable pad on the 8x8 grid.
+#
+# In Programmer Mode the Mini MK3 numbers pads `row * 10 + column`, with rows
+# and columns running 1-8 from the bottom left. Iterating a raw `range(128)`
+# instead sweeps in notes that are not pads at all, and rotating those produces
+# negative note numbers the MIDI layer then rejects one by one.
+ALL_PADS: Tuple[int, ...] = tuple(
+    row * 10 + col for row in range(1, 9) for col in range(1, 9)
+)
 
 # Special Buttons
 IDLE_MODE_BUTTON_ID = 68

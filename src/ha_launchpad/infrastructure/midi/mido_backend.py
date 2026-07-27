@@ -69,6 +69,10 @@ class MidoBackend(MidiBackend):
         if not self.midi_out:
             logger.debug("send_note: output not open (note=%s color=%s)", note, color)
             return
+        if not 0 <= note <= 127:
+            # Not a valid MIDI data byte; nothing on the device answers to it.
+            logger.debug("send_note: skipping out-of-range note %s", note)
+            return
         try:
             velocity = COLORS.get(color, 0)
             msg = mido.Message("note_on", note=note, velocity=velocity, channel=channel)

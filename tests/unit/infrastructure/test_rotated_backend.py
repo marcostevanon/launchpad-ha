@@ -1,5 +1,6 @@
 import pytest
 from unittest.mock import MagicMock
+from src.ha_launchpad.config.mapping import ALL_PADS
 from src.ha_launchpad.infrastructure.midi.rotated_backend import RotatedBackend
 
 class MockMsg:
@@ -16,6 +17,26 @@ def test_rotated_backend_send():
     rotated.send_note(81, "green_1")
     
     inner_backend.send_note.assert_called_with(18, "green_1", 0)
+
+@pytest.mark.parametrize("rotation", [0, 90, 180, 270])
+def test_every_pad_stays_a_valid_midi_note_when_rotated(rotation):
+    """Rotation must map the grid onto itself, whatever the angle.
+
+    Sweeping `range(128)` instead used to push notes 100-127 through the 180
+    degree transform and yield -1 to -28, which the MIDI layer rejected one
+    warning at a time.
+    """
+    inner_backend = MagicMock()
+    rotated = RotatedBackend(inner_backend, rotation)
+
+    for pad in ALL_PADS:
+        rotated.send_note(pad, "green_1")
+
+    sent = [call.args[0] for call in inner_backend.send_note.call_args_list]
+    assert len(sent) == 64
+    assert all(0 <= note <= 127 for note in sent)
+    assert set(sent) == set(ALL_PADS)
+
 
 def test_rotated_backend_receive():
     inner_backend = MagicMock()
