@@ -63,6 +63,23 @@ class HomeAssistantClient:
         self.session.mount("http://", adapter)
         self.session.mount("https://", adapter)
 
+        # Whether we are currently in an outage, so a Home Assistant restart
+        # reports once rather than on every poll for as long as it lasts.
+        self._offline = False
+
+    def _report_unreachable(self, method: str, endpoint: str, error) -> None:
+        if self._offline:
+            logger.debug("Still unreachable (%s %s): %s", method, endpoint, error)
+            return
+
+        logger.warning("Home Assistant unreachable (%s %s): %s", method, endpoint, error)
+        self._offline = True
+
+    def _report_reachable(self) -> None:
+        if self._offline:
+            logger.info("Home Assistant reachable again")
+            self._offline = False
+
     def _request(
         self, method: str, endpoint: str, *, timeout, **kwargs
     ) -> Optional[requests.Response]:
@@ -77,8 +94,10 @@ class HomeAssistantClient:
                 method, endpoint, timeout=timeout, **kwargs
             )
         except requests.exceptions.RequestException as e:
-            logger.warning("Home Assistant unreachable (%s %s): %s", method, endpoint, e)
+            self._report_unreachable(method, endpoint, e)
             return None
+
+        self._report_reachable()
 
         if resp.status_code == 401:
             # Retrying a rejected token achieves nothing and, if Home Assistant

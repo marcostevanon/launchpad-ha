@@ -74,3 +74,29 @@ def test_failed_fetch_leaves_the_board_alone(led_manager):
     assert not changed
     assert not has_notifications
     led_manager.backend.send_note.assert_not_called()
+
+
+def test_outage_is_reported_once_not_every_poll(led_manager, caplog):
+    led_manager.ha_client.get_all_states.return_value = []
+
+    with caplog.at_level("WARNING"):
+        for _ in range(5):
+            led_manager.update_all(dry_run=False)
+
+    warnings = [r for r in caplog.records if "No states returned" in r.message]
+    assert len(warnings) == 1
+
+
+def test_outage_warning_rearms_after_recovery(led_manager, caplog):
+    with caplog.at_level("WARNING"):
+        led_manager.ha_client.get_all_states.return_value = []
+        led_manager.update_all(dry_run=False)
+
+        led_manager.ha_client.get_all_states.return_value = _states("on")
+        led_manager.update_all(dry_run=False)
+
+        led_manager.ha_client.get_all_states.return_value = []
+        led_manager.update_all(dry_run=False)
+
+    warnings = [r for r in caplog.records if "No states returned" in r.message]
+    assert len(warnings) == 2

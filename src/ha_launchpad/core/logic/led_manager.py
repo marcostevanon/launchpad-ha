@@ -23,6 +23,7 @@ class LEDManager:
         self.disco = disco_mode
         self._unknown_entities: Set[str] = set()
         self._last_state: Dict[int, str] = {}
+        self._warned_no_states = False
 
     def update_all(self, dry_run: bool = False) -> tuple[list, bool]:
         """
@@ -42,10 +43,14 @@ class LEDManager:
         all_states = self.ha_client.get_all_states()
         if not all_states:
             # The fetch failed. Leave the board showing the last known state
-            # rather than repainting every pad as "unknown" over a blip.
-            logger.warning("No states returned from Home Assistant - LEDs left as-is")
+            # rather than repainting every pad as "unknown" over a blip. Report
+            # once per outage, not once per poll.
+            if not self._warned_no_states:
+                logger.warning("No states returned from Home Assistant - LEDs left as-is")
+                self._warned_no_states = True
             return [], False
 
+        self._warned_no_states = False
         state_map = {s['entity_id']: s for s in all_states}
 
         for note, entity_id in self.button_map.items():

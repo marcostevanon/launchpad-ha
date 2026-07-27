@@ -24,6 +24,11 @@ def configure_logging(level: Optional[int] = None) -> None:
     fmt = "%(asctime)s %(levelname)s %(name)s %(filename)s:%(lineno)d: \t%(message)s"
     formatter = logging.Formatter(fmt)
 
+    # urllib3 warns once per retry attempt, so a single unreachable poll emits
+    # several lines before our own handler reports the failure with better
+    # context. Leave errors visible, drop the play-by-play.
+    logging.getLogger("urllib3").setLevel(logging.ERROR)
+
     log_file = LOG_FILE
     if log_file:
         try:
