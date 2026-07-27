@@ -152,7 +152,16 @@ class LaunchpadController:
             # Something changed elsewhere in the house. Show it on the sleeping
             # board for a couple of minutes rather than waking everything up.
             if changes:
-                self.idle_manager.show_standby_preview(changes)
+                # The disco pad picks a new random colour on every poll, so it
+                # always looks "changed". Previewing it would relight the
+                # sleeping board indefinitely while disco is running.
+                previewable = [
+                    change
+                    for change in changes
+                    if self.button_map.get(change[0]) != "disco_toggle"
+                ]
+                if previewable:
+                    self.idle_manager.show_standby_preview(previewable)
                 self.led_manager.commit(changes)
 
     def state_polling_thread(self):
