@@ -123,16 +123,12 @@ class InputHandler:
     def _handle_toggle(self, note: int, entity_id: str):
         logger.info("Button %s pressed -> toggle %s", note, entity_id)
 
-        # Optimistic feedback
-        # We return a "flash" action that starts immediately
-        # Then we perform the toggle.
-        # Ideally, toggle should be async or fast.
-
         success = self.ha_client.toggle_entity(entity_id)
         if success:
+            # Brief confirmation on the pad that was pressed.
             return {
                 "update_leds": True,
-                "flash": {"note": note, "color": "yellow_3", "duration": 0.2},
+                "pulse": {"note": note, "color": "yellow_3", "duration": 0.2},
             }
         return {}
 

@@ -252,11 +252,6 @@ class LaunchpadController:
         # 6. Execute Feedback Actions
         feedback_occurred = False
 
-        if "flash" in actions:
-            f = actions["flash"]
-            self.feedback.flash(f["note"], f["color"], f["duration"])
-            feedback_occurred = True
-
         if "pulse" in actions:
             p = actions["pulse"]
             self.feedback.pulse(

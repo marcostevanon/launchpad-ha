@@ -64,7 +64,7 @@ class LEDManager:
 
             # Check for notification condition (Plant problem = red pulse/color)
             if channel == 2 and "plant." in entity_id:
-                # Assuming plant problem returns channel 2 (red flash)
+                # Plant problem is reported on the pulsing channel
                 has_notifications = True
 
             # Create a simple representation of state: "color:channel"
