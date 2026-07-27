@@ -74,16 +74,66 @@ echo "--> building release environment"
 # Python is irrelevant.
 (cd "$REL" && uv sync --frozen --no-dev)
 
-echo "--> self-test (current release still live)"
-(
-	cd "$REL"
-	HA_ENV_FILE="$BASE/shared/env" \
-		LAUNCHPAD_RELEASE_ID="$REL_ID" \
-		LOG_FILE="" \
-		"$REL/.venv/bin/ha-launchpad" --selftest
-)
+echo "--> self-test in the launchd context (current release still live)"
+# This must run as a launchd agent, not over the ssh connection. An ssh session
+# inherits sshd's privacy grants, so a self-test run here would pass while the
+# agent is denied -- which is exactly how a release whose interpreter had no
+# macOS Local Network grant reached production and could not reach Home
+# Assistant at all.
+SELFTEST_LABEL="$LABEL.selftest"
+SELFTEST_RC="$LOGDIR/selftest.rc"
+rm -f "$SELFTEST_RC"
+
+cat >"$BASE/bin/selftest" <<SELFTEST
+#!/bin/bash
+cd "$REL"
+HA_ENV_FILE="$BASE/shared/env" \\
+	LAUNCHPAD_RELEASE_ID="$REL_ID" \\
+	LOG_FILE="$LOGDIR/selftest.log" \\
+	"$REL/.venv/bin/ha-launchpad" --selftest
+echo \$? >"$SELFTEST_RC"
+SELFTEST
+chmod 755 "$BASE/bin/selftest"
+
+cat >"$BASE/selftest.plist" <<SELFTEST_PLIST
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0"><dict>
+  <key>Label</key><string>$SELFTEST_LABEL</string>
+  <key>ProgramArguments</key><array><string>$BASE/bin/selftest</string></array>
+  <key>RunAtLoad</key><true/>
+</dict></plist>
+SELFTEST_PLIST
+
+launchctl bootout "$DOM/$SELFTEST_LABEL" 2>/dev/null || true
+launchctl bootstrap "$DOM" "$BASE/selftest.plist"
+for _ in $(seq 30); do
+	[ -f "$SELFTEST_RC" ] && break
+	sleep 1
+done
+launchctl bootout "$DOM/$SELFTEST_LABEL" 2>/dev/null || true
+
+selftest_rc="$(cat "$SELFTEST_RC" 2>/dev/null || echo "timeout")"
+if [ "$selftest_rc" != 0 ]; then
+	echo "!! self-test failed under launchd (rc=$selftest_rc). Not switching." >&2
+	tail -n 20 "$LOGDIR/selftest.log" 2>/dev/null || true
+	echo >&2
+	echo "   If this reports 'No route to host' while the same check passes over" >&2
+	echo "   ssh, the interpreter lacks a macOS Local Network grant. Approve it" >&2
+	echo "   in System Settings > Privacy & Security > Local Network:" >&2
+	echo "   $(readlink -f "$REL/.venv/bin/python" 2>/dev/null || echo "$REL/.venv/bin/python")" >&2
+	exit 1
+fi
 
 install -m 755 "$REL/packaging/bin/run" "$BASE/bin/run"
+
+# Preserve whatever was running before the first release-based deploy, so even
+# a first deploy -- which has no earlier release to fall back to -- can restore
+# the service it replaced.
+if [ -f "$PLIST" ] && [ ! -f "$BASE/shared/previous.plist" ]; then
+	cp "$PLIST" "$BASE/shared/previous.plist"
+	echo "--> saved the pre-deploy service configuration"
+fi
 
 sed -e "s|__BASE__|$BASE|g" -e "s|__LOGDIR__|$LOGDIR|g" \
 	"$REL/packaging/com.launchpad.ha.plist.template" >"$PLIST.new"
@@ -146,8 +196,17 @@ if [ "$healthy" != 1 ]; then
 		mv -h "$BASE/current.tmp" "$BASE/current"
 		launchctl kickstart -k "$DOM/$LABEL" || true
 		echo "rolled back to $(basename "$PREV")" >&2
+	elif [ -f "$BASE/shared/previous.plist" ]; then
+		# First release-based deploy: fall back to the service configuration
+		# that was in place before, rather than leaving nothing running.
+		cp "$BASE/shared/previous.plist" "$PLIST"
+		chmod 644 "$PLIST"
+		launchctl bootout "$DOM/$LABEL" 2>/dev/null || true
+		sleep 2
+		launchctl bootstrap "$DOM" "$PLIST"
+		echo "restored the pre-deploy service configuration" >&2
 	else
-		echo "no previous release to roll back to" >&2
+		echo "no previous release and no saved configuration to restore" >&2
 	fi
 	exit 1
 fi
