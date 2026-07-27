@@ -15,6 +15,11 @@ from .interface import MidiBackend
 
 logger = logging.getLogger(__name__)
 
+# Novation Launchpad Mini MK3 Programmer's Reference, "Programmer / Live mode".
+# The trailing byte selects the mode.
+PROGRAMMER_MODE_SYSEX = [0x00, 0x20, 0x29, 0x02, 0x0D, 0x0E, 0x01]
+LIVE_MODE_SYSEX = [0x00, 0x20, 0x29, 0x02, 0x0D, 0x0E, 0x00]
+
 
 class MidoBackend(MidiBackend):
     def __init__(self, ident: Optional[str] = None):
@@ -54,9 +59,8 @@ class MidoBackend(MidiBackend):
             self.midi_out = mido.open_output(launchpad_out)  # pyright: ignore
 
             # Enter Programmer Mode (best-effort)
-            PROGRAMMER_MODE = [0x00, 0x20, 0x29, 0x02, 0x0D, 0x0E, 0x01]
             try:
-                self.midi_out.send(mido.Message("sysex", data=PROGRAMMER_MODE))
+                self.midi_out.send(mido.Message("sysex", data=PROGRAMMER_MODE_SYSEX))
             except Exception as exc:
                 logger.warning("Failed to send programmer mode SysEx: %s", exc)
 
@@ -93,6 +97,17 @@ class MidoBackend(MidiBackend):
         return self.usb_device is not None
 
     def close(self):
+        # Hand the device back to Live mode before letting go of the port.
+        # Programmer mode disables the Setup menu (held Session button), so a
+        # process that exits without this leaves the Launchpad stuck in a state
+        # only a power cycle clears.
+        try:
+            if self.midi_out:
+                self.midi_out.send(mido.Message("sysex", data=LIVE_MODE_SYSEX))
+                logger.info("Returned Launchpad to Live mode")
+        except Exception as exc:
+            logger.warning("Failed to restore Live mode: %s", exc)
+
         try:
             if self.midi_in:
                 self.midi_in.close()
