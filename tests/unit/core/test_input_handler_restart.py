@@ -13,10 +13,7 @@ class TestInputHandlerRestart(unittest.TestCase):
         self.disco = MagicMock()
         self.button_map = {15: "dummy1", 16: "dummy2"}
         self.handler = InputHandler(
-            self.ha_client,
-            self.button_map,
-            self.color_picker,
-            self.disco
+            self.ha_client, self.button_map, self.color_picker, self.disco
         )
 
     def test_restart_chord_in_idle_mode(self):
@@ -40,9 +37,7 @@ class TestInputHandlerRestart(unittest.TestCase):
         self.assertEqual(res2, {"restart": True})
 
     def test_restart_chord_expires_after_the_timeout(self):
-        with patch(
-            "ha_launchpad.core.logic.input_handler.time.monotonic"
-        ) as monotonic:
+        with patch("ha_launchpad.core.logic.input_handler.time.monotonic") as monotonic:
             monotonic.return_value = 0.0
             self.handler.handle_press(RESTART_CHORD[0], is_idle=True)
 
@@ -53,9 +48,7 @@ class TestInputHandlerRestart(unittest.TestCase):
         self.assertEqual(res, {})
 
     def test_restart_chord_within_the_timeout_still_fires(self):
-        with patch(
-            "ha_launchpad.core.logic.input_handler.time.monotonic"
-        ) as monotonic:
+        with patch("ha_launchpad.core.logic.input_handler.time.monotonic") as monotonic:
             monotonic.return_value = 0.0
             self.handler.handle_press(RESTART_CHORD[0], is_idle=True)
 

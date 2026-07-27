@@ -37,9 +37,7 @@ def test_exits_non_zero_when_the_launchpad_is_never_found(monkeypatch):
     backend.is_connected.return_value = False
     controller = LaunchpadController(MagicMock(), {}, backend=backend)
 
-    monkeypatch.setattr(
-        "ha_launchpad.core.controller.time.sleep", lambda *_: None
-    )
+    monkeypatch.setattr("ha_launchpad.core.controller.time.sleep", lambda *_: None)
 
     with pytest.raises(SystemExit) as exit_info:
         controller.run()

@@ -40,30 +40,32 @@ logger = logging.getLogger(__name__)
 
 class LaunchpadController:
     def __init__(
-        self, 
-        ha_client: HomeAssistantClient, 
-        button_map: dict[int, str], 
-        backend: MidiBackend | None = None
+        self,
+        ha_client: HomeAssistantClient,
+        button_map: dict[int, str],
+        backend: MidiBackend | None = None,
     ):
         if backend is None:
             backend = MidoBackend()
 
         # Wrap backend with rotation layer
         self.backend = RotatedBackend(backend, LAUNCHPAD_ROTATION)
-        
+
         self.ha_client = ha_client
         self.button_map = button_map
-        
+
         # Features
         self.disco = DiscoMode(ha_client)
         self.color_picker = ColorPicker(ha_client, self.backend)
-        
+
         # Core Logic Modules
         self.led_manager = LEDManager(ha_client, self.backend, button_map, self.disco)
-        self.input_handler = InputHandler(ha_client, button_map, self.color_picker, self.disco)
+        self.input_handler = InputHandler(
+            ha_client, button_map, self.color_picker, self.disco
+        )
         self.feedback = FeedbackManager(self.backend)
         self.idle_manager = IdleManager(self.backend)
-        
+
         self.running = False
         self._press_times: dict[int, float] = {}
 
@@ -132,16 +134,16 @@ class LaunchpadController:
         # Checks
         if self.color_picker.active:
             return
-            
+
         is_idle = self.idle_manager.is_idle
-        
+
         # Update logic: If idle, we dry_run to check for changes without lighting up
         # UNLESS force is True (waking up)
         dry_run = is_idle and not force
-        
+
         if force:
             self.led_manager.invalidate_cache()
-            
+
         changes, has_notif = self.led_manager.update_all(dry_run=dry_run)
 
         if is_idle:
@@ -168,7 +170,7 @@ class LaunchpadController:
         logger.info("Starting state polling (interval: %ss)", POLL_INTERVAL)
         while self.running:
             try:
-                self.idle_manager.check_status() # Check for idle timeout
+                self.idle_manager.check_status()  # Check for idle timeout
                 self.update_led_states()
             except HomeAssistantUnauthorized as exc:
                 # Retrying cannot help, and hammering a rejected token risks
@@ -177,7 +179,6 @@ class LaunchpadController:
                 logger.error("%s", exc)
                 self.running = False
                 return
-
 
             # Variable polling interval. While asleep this also decides how
             # quickly a change elsewhere shows up as a standby preview.
@@ -188,20 +189,21 @@ class LaunchpadController:
 
     def handle_button_press(self, note: int):
         """Handle button press via InputHandler and execute Feedback"""
-        
+
         is_idle = self.idle_manager.is_idle
-        
+
         # 1. Determine actions via Handler
         actions = self.input_handler.handle_press(note, is_idle=is_idle)
-        
+
         # 2. Handle Restart Action (always prioritized)
         if actions.get("restart"):
             logger.info("Restart action received. Exiting with non-zero code...")
             sys.exit(1)
-        
+
         # 3. Idle Logic Check
         if is_idle:
             from ha_launchpad.config.mapping import IDLE_MODE_BUTTON_ID
+
             if note == IDLE_MODE_BUTTON_ID:
                 self.idle_manager.wake_up()
                 # Restore LEDs immediately
@@ -219,31 +221,33 @@ class LaunchpadController:
         if actions.get("sleep"):
             self.idle_manager.set_manual_sleep()
             return
-        
+
         # 6. Execute Feedback Actions
         feedback_occurred = False
-        
+
         if "flash" in actions:
             f = actions["flash"]
             self.feedback.flash(f["note"], f["color"], f["duration"])
             feedback_occurred = True
-            
+
         if "pulse" in actions:
             p = actions["pulse"]
-            self.feedback.pulse(p["note"], p["color"], p["duration"], p.get("clear_note"))
+            self.feedback.pulse(
+                p["note"], p["color"], p["duration"], p.get("clear_note")
+            )
             feedback_occurred = True
-            
+
         if feedback_occurred:
             # Force refresh of LEDs to overwrite the temporary feedback state
             self.led_manager.invalidate_cache()
-            
+
         if actions.get("update_leds") or feedback_occurred:
             self.update_led_states()
 
     def _handle_note_on(self, note: int):
         """Handle MIDI note-on (button press)."""
         logger.debug("DEBUG: _handle_note_on received note: %s", note)
-        
+
         # 0. Idle Check: If idle, bypass all feature logic and delegate to main handler
         #    This prevents Color Picker/Brightness modes from activating during sleep.
         if self.idle_manager.is_idle:
@@ -260,10 +264,11 @@ class LaunchpadController:
             return
 
         from ha_launchpad.config.mapping import IDLE_MODE_BUTTON_ID
+
         if note == IDLE_MODE_BUTTON_ID:
-             logger.debug("DEBUG: Manual Sleep Button pressed -> Handling immediately")
-             self.handle_button_press(note)
-             return
+            logger.debug("DEBUG: Manual Sleep Button pressed -> Handling immediately")
+            self.handle_button_press(note)
+            return
 
         # record press time
         self._press_times[note] = time.time()
@@ -271,16 +276,16 @@ class LaunchpadController:
         if note in self.button_map:
             show_colors = note in COLOR_PICK_ENABLED
             show_brightness = note in BRIGHTNESS_ENABLED
-            
+
             if show_colors or show_brightness:
                 try:
                     entity_id = self.button_map.get(note)
                     if entity_id:
                         self.color_picker.enter(
-                            entity_id, 
-                            note, 
-                            show_colors=show_colors, 
-                            show_brightness=show_brightness
+                            entity_id,
+                            note,
+                            show_colors=show_colors,
+                            show_brightness=show_brightness,
                         )
                 except Exception:
                     logger.debug("enter_color_pick_mode failed", exc_info=True)
@@ -296,17 +301,18 @@ class LaunchpadController:
         if self.color_picker.active:
             # If the note released IS the source note, handle it
             if note == self.color_picker.source_note:
-                 self.handle_button_press(note)
+                self.handle_button_press(note)
             return
 
         # CASE 2: InputHandler tracks selection state
         if self.input_handler.handle_note_off(note):
-             return # Suppress default
+            return  # Suppress default
 
         # CASE 3: Normal toggle
         # CRITICAL FIX: Do NOT toggle special Idle/Sleep button on release
         # This prevents "Wake Up (Press) -> Sleep (Release)" loop.
         from ha_launchpad.config.mapping import IDLE_MODE_BUTTON_ID
+
         if note == IDLE_MODE_BUTTON_ID:
             return
 
@@ -323,7 +329,7 @@ class LaunchpadController:
         mtype = getattr(msg, "type", None)
         velocity = getattr(msg, "velocity", 0)
         note = getattr(msg, "note", None)
-        
+
         if note is None:
             return
 
@@ -335,7 +341,6 @@ class LaunchpadController:
         # Note-off (release) or note_on with velocity 0
         if mtype == "note_off" or (mtype == "note_on" and velocity == 0):
             self._handle_note_off(note)
-
 
     def usb_monitor_thread(self):
         """Background thread that continuously monitors Launchpad USB connection."""
@@ -373,7 +378,9 @@ class LaunchpadController:
             )
             logger.warning(
                 "Failed to connect to Launchpad (attempt %d/%d). Retrying in %.1fs...",
-                attempt, max_attempts, delay,
+                attempt,
+                max_attempts,
+                delay,
             )
             time.sleep(delay)
 
@@ -396,10 +403,14 @@ class LaunchpadController:
         self.update_led_states()
 
         try:
-            poll_thread = threading.Thread(target=self.state_polling_thread, daemon=True)
+            poll_thread = threading.Thread(
+                target=self.state_polling_thread, daemon=True
+            )
             poll_thread.start()
 
-            monitor_thread = threading.Thread(target=self.usb_monitor_thread, daemon=True)
+            monitor_thread = threading.Thread(
+                target=self.usb_monitor_thread, daemon=True
+            )
             monitor_thread.start()
 
             # MIDI Loop
@@ -413,14 +424,14 @@ class LaunchpadController:
                     try:
                         # Assuming mido port or object that has iter_pending
                         # If backend returns mido port direclty:
-                        if hasattr(midi_in, 'iter_pending'):
-                             for msg in midi_in.iter_pending():
+                        if hasattr(midi_in, "iter_pending"):
+                            for msg in midi_in.iter_pending():
                                 self.handle_midi_message(msg)
                         else:
                             # Fallback if specific backend returns iterator
                             # Note: MidoBackend returns self.midi_in which is a mido Port
                             pass
-                            
+
                         time.sleep(0.1)
                     except (OSError, ValueError):
                         break

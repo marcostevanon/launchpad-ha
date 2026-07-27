@@ -7,6 +7,7 @@ from .interface import MidiBackend
 
 class RotatedMidiIn:
     """Wrapper for MIDI input iterator that rotates incoming notes."""
+
     def __init__(self, midi_in_port, rotation: int):
         self._midi_in_port = midi_in_port
         self._rotation = rotation
@@ -15,7 +16,7 @@ class RotatedMidiIn:
         """Iterate over pending messages and rotate their notes."""
         if not hasattr(self._midi_in_port, "iter_pending"):
             return iter(())
-            
+
         for msg in self._midi_in_port.iter_pending():
             yield self._rotate_msg(msg)
 
@@ -34,10 +35,11 @@ class RotatedMidiIn:
 class RotatedBackend(MidiBackend):
     """
     Decorator for a MidiBackend that automatically handles note rotation.
-    
+
     Any note sent TO this backend will be rotated from 'logical' to 'physical'.
     Any message received FROM this backend will be rotated from 'physical' to 'logical'.
     """
+
     def __init__(self, backend: MidiBackend, rotation: int):
         self._backend = backend
         self._rotation = rotation

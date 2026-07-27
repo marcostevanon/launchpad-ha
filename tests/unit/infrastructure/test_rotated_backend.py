@@ -11,15 +11,17 @@ class MockMsg:
         self.note = note
         self.type = "note_on"
 
+
 def test_rotated_backend_send():
     inner_backend = MagicMock()
     # 180 deg rotation: (9-row)*10 + (9-col)
     # 81 (8,1) -> (9-8, 9-1) = (1,8) -> 18
     rotated = RotatedBackend(inner_backend, 180)
-    
+
     rotated.send_note(81, "green_1")
-    
+
     inner_backend.send_note.assert_called_with(18, "green_1", 0)
+
 
 @pytest.mark.parametrize("rotation", [0, 90, 180, 270])
 def test_every_pad_stays_a_valid_midi_note_when_rotated(rotation):
@@ -44,14 +46,14 @@ def test_every_pad_stays_a_valid_midi_note_when_rotated(rotation):
 def test_rotated_backend_receive():
     inner_backend = MagicMock()
     rotated = RotatedBackend(inner_backend, 180)
-    
+
     # Simulate hardware sending 18 (physical)
     mock_port = MagicMock()
     mock_port.iter_pending.return_value = [MockMsg(18)]
     inner_backend.iter_incoming.return_value = mock_port
-    
+
     rotated_in = rotated.iter_incoming()
     msgs = list(rotated_in.iter_pending())
-    
+
     assert len(msgs) == 1
-    assert msgs[0].note == 81 # Should be rotated back to logical
+    assert msgs[0].note == 81  # Should be rotated back to logical

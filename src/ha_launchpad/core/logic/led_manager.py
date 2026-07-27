@@ -9,13 +9,14 @@ from ha_launchpad.infrastructure.midi.interface import MidiBackend
 
 logger = logging.getLogger(__name__)
 
+
 class LEDManager:
     def __init__(
-        self, 
-        ha_client: HomeAssistantClient, 
+        self,
+        ha_client: HomeAssistantClient,
         backend: MidiBackend,
         button_map: dict[int, str],
-        disco_mode: DiscoMode
+        disco_mode: DiscoMode,
     ):
         self.ha_client = ha_client
         self.backend = backend
@@ -46,28 +47,30 @@ class LEDManager:
             # rather than repainting every pad as "unknown" over a blip. Report
             # once per outage, not once per poll.
             if not self._warned_no_states:
-                logger.warning("No states returned from Home Assistant - LEDs left as-is")
+                logger.warning(
+                    "No states returned from Home Assistant - LEDs left as-is"
+                )
                 self._warned_no_states = True
             return [], False
 
         self._warned_no_states = False
-        state_map = {s['entity_id']: s for s in all_states}
+        state_map = {s["entity_id"]: s for s in all_states}
 
         for note, entity_id in self.button_map.items():
             if self.disco.active and entity_id in DISCO_LIGHTS:
                 continue
 
             color, channel = self._determine_color(entity_id, state_map)
-            
+
             # Check for notification condition (Plant problem = red pulse/color)
-            if channel == 2 and "plant." in entity_id: 
-                 # Assuming plant problem returns channel 2 (red flash)
-                 has_notifications = True
-            
+            if channel == 2 and "plant." in entity_id:
+                # Assuming plant problem returns channel 2 (red flash)
+                has_notifications = True
+
             # Create a simple representation of state: "color:channel"
             state_key = f"{color}:{channel}"
             current_state[note] = state_key
-            
+
             # Check if changed
             if self._last_state.get(note) != state_key:
                 changes.append((note, color, channel))
@@ -103,35 +106,35 @@ class LEDManager:
                 colors = ["orange_1", "green_1", "cyan_1", "pink_2", "yellow_1"]
                 return random.choice(colors), 2
             return "orange_1", 0
-        
+
         # Manual Sleep Button (always orange_3 when active)
         if entity_id == "manual_sleep":
             return "lightblue_0", 0
-        
+
         if entity_id.startswith(("volume_up.", "volume_down.")):
             return self._get_volume_button_color(entity_id, state_map)
 
         # Standard entities
         state_data = state_map.get(entity_id)
         if not state_data:
-            return "red_2", 0 # Default/Unknown
+            return "red_2", 0  # Default/Unknown
 
         state = state_data.get("state", "unknown")
         domain = entity_id.split(".")[0]
-        
+
         if domain in ["light", "switch"]:
             if state == "on":
                 if domain == "light" and "attributes" in state_data:
                     return self._get_dimmed_color(state_data["attributes"]), 0
                 return "green_1", 0
             return "amber_1", 0
-            
+
         if domain == "scene":
             return "blue_1", 0
 
         if domain == "script":
             return "purple_1", 0
-            
+
         if domain == "media_player":
             if state == "playing":
                 return "cyan_0", 2
@@ -140,7 +143,7 @@ class LEDManager:
             if "nestmini" in entity_id or "studio_speaker" in entity_id:
                 return "off", 0
             return "amber_1", 0
-            
+
         if domain == "plant":
             problem = state_data.get("attributes", {}).get("problem", "unknown")
             if problem == "none":
@@ -159,7 +162,7 @@ class LEDManager:
                 return "purple_1", 0
             return "off", 0
         return "purple_1", 0
-    
+
     def _get_dimmed_color(self, attributes: dict):
         brightness = attributes.get("brightness", 255)
         if brightness <= 85:

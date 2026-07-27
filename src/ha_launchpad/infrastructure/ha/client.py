@@ -72,7 +72,9 @@ class HomeAssistantClient:
             logger.debug("Still unreachable (%s %s): %s", method, endpoint, error)
             return
 
-        logger.warning("Home Assistant unreachable (%s %s): %s", method, endpoint, error)
+        logger.warning(
+            "Home Assistant unreachable (%s %s): %s", method, endpoint, error
+        )
         self._offline = True
 
     def _report_reachable(self) -> None:
@@ -90,9 +92,7 @@ class HomeAssistantClient:
         completed; raises only when the failure is not worth retrying at all.
         """
         try:
-            resp = self.session.request(
-                method, endpoint, timeout=timeout, **kwargs
-            )
+            resp = self.session.request(method, endpoint, timeout=timeout, **kwargs)
         except requests.exceptions.RequestException as e:
             self._report_unreachable(method, endpoint, e)
             return None
@@ -198,7 +198,11 @@ class HomeAssistantClient:
         elif domain == "media_player":
             state_data = self.get_state(entity_id)
             if state_data and state_data.get("state") in ["off", "unavailable"]:
-                logger.debug("Media player %s is %s - skipping play/pause command", entity_id, state_data.get("state"))
+                logger.debug(
+                    "Media player %s is %s - skipping play/pause command",
+                    entity_id,
+                    state_data.get("state"),
+                )
                 return True
             # For all media players, use play/pause toggle when active
             return self.call_service("media_player", "media_play_pause", entity_id)
@@ -227,4 +231,6 @@ class HomeAssistantClient:
             return False
 
         new_volume = max(0.0, min(1.0, current_volume + delta))
-        return self.call_service("media_player", "volume_set", entity_id, volume_level=new_volume)
+        return self.call_service(
+            "media_player", "volume_set", entity_id, volume_level=new_volume
+        )

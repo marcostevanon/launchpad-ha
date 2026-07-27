@@ -14,14 +14,17 @@ def test_button_map_keys_are_integers():
     for key in BUTTON_MAP:
         assert isinstance(key, int)
 
+
 def test_button_map_values_are_strings():
     for value in BUTTON_MAP.values():
         assert isinstance(value, str)
+
 
 def test_color_pick_enabled_are_in_map():
     # All color pick enabled buttons should be mapped functionality
     for note in COLOR_PICK_ENABLED:
         assert note in BUTTON_MAP
+
 
 def test_no_duplicate_keys_in_mapping_tables():
     """A repeated key is silently dropped when the dict literal is evaluated,
@@ -53,4 +56,3 @@ def test_palette_colors_exist():
     for info in COLOR_PALETTE.values():
         color_name = info["color"]
         assert color_name in COLORS or color_name == "off"
-

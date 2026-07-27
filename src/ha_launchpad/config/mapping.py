@@ -10,12 +10,10 @@ BUTTON_MAP: dict[int, str] = {
     71: "switch.living_room_bulbs_string",
     72: "light.living_room_lamp",
     73: "switch.living_room_neon",
-
     # bedroom
     61: "light.bulb_bedroom",
     62: "light.bedroom_lamp",
     63: "switch.humidifier",
-
     # scenes
     85: "scene.i_m_home",
     86: "scene.i_m_leaving",
@@ -25,27 +23,21 @@ BUTTON_MAP: dict[int, str] = {
     76: "scene.living_room_red",
     77: "scene.living_room_1",
     78: "disco_toggle",
-
     # media
     65: "media_player.living_room_sonos",
     66: "volume_down.media_player.living_room_sonos",
     67: "volume_up.media_player.living_room_sonos",
-
     55: "media_player.studio_speaker",
     56: "volume_down.media_player.studio_speaker",
     57: "volume_up.media_player.studio_speaker",
-
     45: "media_player.nestmini7849",
     46: "volume_down.media_player.nestmini7849",
     47: "volume_up.media_player.nestmini7849",
-
     35: "script.vinyl_play_on_sonos",
     36: "script.vinyl_stop",
-
     # plants
     17: "plant.monstera",
     18: "plant.pothos",
-    
     # special
     68: "manual_sleep",
 }
@@ -62,8 +54,8 @@ ALL_PADS: tuple[int, ...] = tuple(
 
 # Special Buttons
 IDLE_MODE_BUTTON_ID = 68
-RESTART_CHORD = (15, 16) # First button then second button
-RESTART_CHORD_TIMEOUT = 2.0 # Seconds allowed between the two presses
+RESTART_CHORD = (15, 16)  # First button then second button
+RESTART_CHORD_TIMEOUT = 2.0  # Seconds allowed between the two presses
 
 # Pads that should enter color-pick mode when pressed (keys from BUTTON_MAP)
 COLOR_PICK_ENABLED: set[int] = {81, 82, 83, 84, 62}

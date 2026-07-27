@@ -8,6 +8,7 @@ from ha_launchpad.infrastructure.midi.interface import MidiBackend
 
 logger = logging.getLogger(__name__)
 
+
 class IdleManager:
     def __init__(self, backend: MidiBackend):
         self.backend = backend
@@ -54,7 +55,7 @@ class IdleManager:
     def enter_idle(self):
         if self._is_idle:
             return
-            
+
         self._is_idle = True
 
         # turn off all lights
@@ -73,7 +74,6 @@ class IdleManager:
         # the pre-sleep timestamp, decides the timeout has long since elapsed,
         # and puts the board straight back to sleep.
         self._last_activity_time = time.time()
-
 
         # Controller will be responsible for refreshing LEDs after this returns
 
@@ -99,7 +99,9 @@ class IdleManager:
 
         if shown:
             logger.info(
-                "Standby preview: %d pad(s) lit for %.0fs", shown, STANDBY_PREVIEW_DURATION
+                "Standby preview: %d pad(s) lit for %.0fs",
+                shown,
+                STANDBY_PREVIEW_DURATION,
             )
 
     def expire_standby_preview(self) -> None:
@@ -124,16 +126,16 @@ class IdleManager:
         if self.backend and self.backend.is_connected():
             for note in ALL_PADS:
                 if note != IDLE_MODE_BUTTON_ID:
-                     self.backend.send_note(note, "off")
+                    self.backend.send_note(note, "off")
 
     def _update_wake_button(self):
         """Set wake button color based on notification status."""
         if not self.backend.is_connected():
             return
-            
+
         if self._has_notifications:
             color = "orange_1"
         else:
             color = "lightblue_0"
-            
+
         self.backend.send_note(IDLE_MODE_BUTTON_ID, color)

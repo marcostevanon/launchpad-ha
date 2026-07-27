@@ -5,6 +5,7 @@ from ha_launchpad.infrastructure.midi.interface import MidiBackend
 
 logger = logging.getLogger(__name__)
 
+
 class FeedbackManager:
     def __init__(self, backend: MidiBackend):
         self.backend = backend
@@ -14,13 +15,19 @@ class FeedbackManager:
         self.backend.send_note(note, color, channel=2)
         time.sleep(duration)
 
-    def pulse(self, note: int, color: str, duration: float = 0.4, clear_note: int | None = None):
+    def pulse(
+        self,
+        note: int,
+        color: str,
+        duration: float = 0.4,
+        clear_note: int | None = None,
+    ):
         """Pulse a button, optionally clearing another button."""
         self.backend.send_note(note, color, channel=2)
-        
+
         if clear_note is not None:
-             self.backend.send_note(clear_note, "off")
-             
+            self.backend.send_note(clear_note, "off")
+
         time.sleep(duration)
 
     def clear(self, note: int):
