@@ -34,6 +34,9 @@ class LEDManager:
         self._unknown_entities: set[str] = set()
         self._last_state: dict[int, str] = {}
         self._warned_no_states = False
+        # Pads whose entity could not be reached at the last poll. Pressing one
+        # cannot achieve anything, so the controller refuses to act on it.
+        self._unavailable_notes: set[int] = set()
 
     def update_all(self, dry_run: bool = False) -> tuple[list, bool]:
         """
@@ -71,6 +74,13 @@ class LEDManager:
 
             color, channel = self._determine_color(entity_id, state_map)
 
+            # Track reachability regardless of dry_run: this is what Home
+            # Assistant reports, not what is currently on the board.
+            if color == UNAVAILABLE_COLOR:
+                self._unavailable_notes.add(note)
+            else:
+                self._unavailable_notes.discard(note)
+
             # Check for notification condition (Plant problem = red pulse/color)
             if channel == 2 and "plant." in entity_id:
                 # Plant problem is reported on the pulsing channel
@@ -93,6 +103,10 @@ class LEDManager:
             self._last_state = current_state
 
         return changes, has_notifications
+
+    def is_unavailable(self, note: int) -> bool:
+        """Whether this pad's entity was unreachable at the last poll."""
+        return note in self._unavailable_notes
 
     def commit(self, changes) -> None:
         """Record changes as already displayed, so they are not reported again.

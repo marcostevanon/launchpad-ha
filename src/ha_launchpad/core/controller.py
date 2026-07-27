@@ -28,7 +28,7 @@ from ha_launchpad.core.logic.idle_manager import IdleManager
 from ha_launchpad.core.logic.input_handler import InputHandler
 
 # New Logic Components
-from ha_launchpad.core.logic.led_manager import LEDManager
+from ha_launchpad.core.logic.led_manager import UNAVAILABLE_COLOR, LEDManager
 from ha_launchpad.features.color_picker import ColorPicker
 from ha_launchpad.features.disco import DiscoMode
 from ha_launchpad.infrastructure.ha.client import (
@@ -72,6 +72,7 @@ class LaunchpadController:
 
         self.running = False
         self._last_heartbeat = 0.0
+        self._unavailable_presses: set[int] = set()
         self._press_times: dict[int, float] = {}
 
     def _install_signal_handlers(self):
@@ -292,6 +293,15 @@ class LaunchpadController:
             self.handle_button_press(note)
             return
 
+        # An unreachable device cannot be controlled, so the pad does not act:
+        # no colour picker, no service call. Blank it while held so the press
+        # is still acknowledged, and restore the colour on release.
+        if self.led_manager.is_unavailable(note):
+            logger.debug("Pad %s is unavailable - ignoring press", note)
+            self._unavailable_presses.add(note)
+            self.backend.send_note(note, "off")
+            return
+
         # record press time
         self._press_times[note] = time.time()
 
@@ -314,6 +324,13 @@ class LaunchpadController:
 
     def _handle_note_off(self, note: int):
         """Handle MIDI note-off (button release)."""
+        if note in self._unavailable_presses:
+            self._unavailable_presses.discard(note)
+            # Put back exactly what the LED manager believes is there, so its
+            # cache stays truthful and no repaint is needed.
+            self.backend.send_note(note, UNAVAILABLE_COLOR)
+            return
+
         start = self._press_times.pop(note, None)
         if start is not None:
             duration = time.time() - start

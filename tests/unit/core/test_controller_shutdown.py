@@ -52,3 +52,30 @@ def test_handlers_are_installed_for_both_signals(controller):
     for sig in (signal.SIGTERM, signal.SIGINT):
         assert callable(signal.getsignal(sig))
         assert signal.getsignal(sig) not in (signal.SIG_DFL, signal.SIG_IGN)
+
+
+def test_pressing_an_unavailable_pad_does_nothing_but_blank_it(controller):
+    """An unreachable device cannot be controlled, so the pad must not enter
+    colour-pick mode (which pulsed yellow) or fire a service call."""
+    # Bypass the rotation decorator so the assertion is about controller
+    # behaviour, not about which physical pad the note lands on.
+    controller.backend = MagicMock()
+    controller.led_manager._unavailable_notes = {81}
+    controller.button_map = {81: "light.bedroom"}
+
+    controller._handle_note_on(81)
+
+    controller.backend.send_note.assert_called_once_with(81, "off")
+    assert not controller.color_picker.active
+
+
+def test_releasing_an_unavailable_pad_restores_its_colour(controller):
+    controller.backend = MagicMock()
+    controller.led_manager._unavailable_notes = {81}
+    controller.button_map = {81: "light.bedroom"}
+
+    controller._handle_note_on(81)
+    controller.backend.send_note.reset_mock()
+    controller._handle_note_off(81)
+
+    controller.backend.send_note.assert_called_once_with(81, "gray_1")
