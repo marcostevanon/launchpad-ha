@@ -24,13 +24,17 @@ class LEDManager:
         self._unknown_entities: Set[str] = set()
         self._last_state: Dict[int, str] = {}
 
-    def update_all(self, dry_run: bool = False) -> tuple[bool, bool]:
+    def update_all(self, dry_run: bool = False) -> tuple[list, bool]:
         """
         Update all mapped LEDs based on HA states.
+
         Returns:
-            (changes_detected: bool, has_notifications: bool)
+            (changes: list of (note, color, channel), has_notifications: bool)
+
+        With dry_run the changes are reported but nothing is sent and nothing
+        is recorded, leaving the caller free to decide what to display.
         """
-        changes_detected = False
+        changes = []
         has_notifications = False
         current_state = {}
 
@@ -40,7 +44,7 @@ class LEDManager:
             # The fetch failed. Leave the board showing the last known state
             # rather than repainting every pad as "unknown" over a blip.
             logger.warning("No states returned from Home Assistant - LEDs left as-is")
-            return False, False
+            return [], False
 
         state_map = {s['entity_id']: s for s in all_states}
 
@@ -61,7 +65,7 @@ class LEDManager:
             
             # Check if changed
             if self._last_state.get(note) != state_key:
-                changes_detected = True
+                changes.append((note, color, channel))
                 if not dry_run:
                     self.backend.send_note(note, color, channel)
 
@@ -71,7 +75,16 @@ class LEDManager:
         if not dry_run:
             self._last_state = current_state
 
-        return changes_detected, has_notifications
+        return changes, has_notifications
+
+    def commit(self, changes) -> None:
+        """Record changes as already displayed, so they are not reported again.
+
+        Used when something other than update_all() has put these colours on
+        the board -- the standby preview, which paints a sleeping board itself.
+        """
+        for note, color, channel in changes:
+            self._last_state[note] = f"{color}:{channel}"
 
     def invalidate_cache(self):
         """Force next update to resend all states."""

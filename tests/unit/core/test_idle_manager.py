@@ -68,6 +68,46 @@ def test_wake_up(idle_manager):
     idle_manager.wake_up()
     assert not idle_manager.is_idle
 
+def test_standby_preview_lights_changed_pads_without_waking(idle_manager):
+    idle_manager.backend.is_connected.return_value = True
+    idle_manager.enter_idle()
+    idle_manager.backend.send_note.reset_mock()
+
+    idle_manager.show_standby_preview([(81, "green_1", 0)])
+
+    idle_manager.backend.send_note.assert_called_once_with(81, "green_1", 0)
+    assert idle_manager.is_idle
+
+
+def test_standby_preview_turns_itself_off_when_it_expires(idle_manager):
+    from src.ha_launchpad.config.settings import STANDBY_PREVIEW_DURATION
+
+    idle_manager.backend.is_connected.return_value = True
+
+    with patch('time.time') as mock_time:
+        mock_time.return_value = 0
+        idle_manager.show_standby_preview([(81, "green_1", 0)])
+
+        # Still within the window: leave it lit.
+        mock_time.return_value = STANDBY_PREVIEW_DURATION - 1
+        idle_manager.backend.send_note.reset_mock()
+        idle_manager.expire_standby_preview()
+        idle_manager.backend.send_note.assert_not_called()
+
+        # Past the window: turn it back off.
+        mock_time.return_value = STANDBY_PREVIEW_DURATION + 1
+        idle_manager.expire_standby_preview()
+        idle_manager.backend.send_note.assert_called_once_with(81, "off")
+
+
+def test_standby_preview_leaves_the_wake_button_alone(idle_manager):
+    idle_manager.backend.is_connected.return_value = True
+
+    idle_manager.show_standby_preview([(IDLE_MODE_BUTTON_ID, "green_1", 0)])
+
+    idle_manager.backend.send_note.assert_not_called()
+
+
 def test_notification_visuals(idle_manager):
     idle_manager.backend.is_connected.return_value = True
     

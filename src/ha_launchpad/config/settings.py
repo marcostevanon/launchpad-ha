@@ -37,6 +37,13 @@ LAUNCHPAD_MAX_RETRY_DELAY = float(os.getenv("LAUNCHPAD_MAX_RETRY_DELAY", "10.0")
 
 # Idle Mode
 IDLE_TIMEOUT = int(os.getenv("LAUNCHPAD_IDLE_TIMEOUT", "1800")) # Default 30 minutes
+# How often to check Home Assistant while asleep. This also sets how quickly a
+# change elsewhere in the house shows up as a standby preview.
+IDLE_POLL_INTERVAL = float(os.getenv("LAUNCHPAD_IDLE_POLL_INTERVAL", "10.0"))
+# How long a pad stays lit on the sleeping board after its entity changed.
+STANDBY_PREVIEW_DURATION = float(
+    os.getenv("LAUNCHPAD_STANDBY_PREVIEW_DURATION", "120.0")
+)
 
 LAUNCHPAD_ROTATION = int(os.getenv("LAUNCHPAD_ROTATION", "180"))
 

@@ -12,7 +12,8 @@ from src.ha_launchpad.config.settings import (
     LAUNCHPAD_ALIVE_DELAY,
     LAUNCHPAD_RETRY_DELAY,
     LAUNCHPAD_MAX_RETRY_DELAY,
-    POLL_INTERVAL
+    POLL_INTERVAL,
+    IDLE_POLL_INTERVAL,
 )
 from src.ha_launchpad.config.mapping import (
     ALL_PADS,
@@ -142,17 +143,17 @@ class LaunchpadController:
         if force:
             self.led_manager.invalidate_cache()
             
-        changed, has_notif = self.led_manager.update_all(dry_run=dry_run)
-        
+        changes, has_notif = self.led_manager.update_all(dry_run=dry_run)
+
         if is_idle:
             self.idle_manager.set_notification_status(has_notif)
-            
-            # If HA state changed while idle, we wake up (Remote Wake)
-            if changed:
-                logger.info("Home Assistant state changed -> Waking up...")
-                self.idle_manager.register_activity()
-                # Force immediate update to reflect new state
-                self.led_manager.update_all(dry_run=False)
+            self.idle_manager.expire_standby_preview()
+
+            # Something changed elsewhere in the house. Show it on the sleeping
+            # board for a couple of minutes rather than waking everything up.
+            if changes:
+                self.idle_manager.show_standby_preview(changes)
+                self.led_manager.commit(changes)
 
     def state_polling_thread(self):
         """Background thread to poll HA states and update LEDs"""
@@ -170,9 +171,10 @@ class LaunchpadController:
                 return
 
 
-            # Variable polling interval
+            # Variable polling interval. While asleep this also decides how
+            # quickly a change elsewhere shows up as a standby preview.
             if self.idle_manager.is_idle:
-                time.sleep(120) # Poll slower when idle
+                time.sleep(IDLE_POLL_INTERVAL)
             else:
                 time.sleep(POLL_INTERVAL)
 

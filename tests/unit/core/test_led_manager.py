@@ -52,6 +52,20 @@ def test_unchanged_state_is_not_resent(led_manager):
     led_manager.backend.send_note.assert_not_called()
 
 
+def test_commit_stops_a_change_being_reported_twice(led_manager):
+    """The standby preview paints the board itself, then commits, so the next
+    poll does not keep re-reporting the same change forever."""
+    led_manager.ha_client.get_all_states.return_value = _states("on")
+
+    changes, _ = led_manager.update_all(dry_run=True)
+    assert changes
+
+    led_manager.commit(changes)
+    changes_again, _ = led_manager.update_all(dry_run=True)
+
+    assert changes_again == []
+
+
 def test_failed_fetch_leaves_the_board_alone(led_manager):
     led_manager.ha_client.get_all_states.return_value = []
 
