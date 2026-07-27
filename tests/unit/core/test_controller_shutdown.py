@@ -31,6 +31,23 @@ def test_signal_requests_graceful_shutdown(controller, sig):
     assert controller.running is False
 
 
+def test_exits_non_zero_when_the_launchpad_is_never_found(monkeypatch):
+    backend = MagicMock()
+    backend.find_and_open.return_value = False
+    backend.is_connected.return_value = False
+    controller = LaunchpadController(MagicMock(), {}, backend=backend)
+
+    monkeypatch.setattr(
+        "src.ha_launchpad.core.controller.time.sleep", lambda *_: None
+    )
+
+    with pytest.raises(SystemExit) as exit_info:
+        controller.run()
+
+    assert exit_info.value.code == 1
+    backend.close.assert_called()
+
+
 def test_handlers_are_installed_for_both_signals(controller):
     controller._install_signal_handlers()
 

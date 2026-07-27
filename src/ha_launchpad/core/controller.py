@@ -337,10 +337,12 @@ class LaunchpadController:
 
         attempt = 0
         max_attempts = 30
+        connected = False
 
         while self.running and attempt < max_attempts:
             attempt += 1
             if self.find_launchpad():
+                connected = True
                 logger.info("✓ Launchpad HA Controller started!")
                 break
 
@@ -357,6 +359,15 @@ class LaunchpadController:
             logger.info("Shutdown requested before startup completed")
             self.close_backend()
             return
+
+        if not connected:
+            logger.error(
+                "Launchpad not found after %d attempts - exiting so the service "
+                "manager can retry from a clean state",
+                max_attempts,
+            )
+            self.close_backend()
+            raise SystemExit(1)
 
         logger.info("Press Ctrl+C to exit")
         self.clear_all_leds(splash=True)
