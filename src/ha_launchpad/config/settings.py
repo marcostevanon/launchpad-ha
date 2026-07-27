@@ -70,4 +70,10 @@ if LAUNCHPAD_ROTATION not in {0, 90, 180, 270}:
 
 # Disco Mode Settings
 DISCO_LIGHTS = ["light.bulb_1", "light.bulb_2", "light.bulb_3"]
-DISCO_SPEED = float(os.getenv("DISCO_SPEED", "0.5"))
+DISCO_SPEED = float(os.getenv("DISCO_SPEED", "2.0"))
+# Crossfade length, in WHOLE seconds. The Trådfri integration does
+# `int(transition) * 10` to convert to deciseconds, so any value below 1.0
+# truncates to zero and the colour changes instantly instead of fading.
+DISCO_TRANSITION = int(os.getenv("DISCO_TRANSITION", "2"))
+# Applied once when disco starts, never per step -- see disco.py.
+DISCO_BRIGHTNESS = int(os.getenv("DISCO_BRIGHTNESS", "254"))
