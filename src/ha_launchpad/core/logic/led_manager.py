@@ -13,7 +13,10 @@ logger = logging.getLogger(__name__)
 # opposed to "it is switched off". Wi-Fi bulbs killed at a wall switch report
 # `unavailable`, and rendering that as plain off hides the difference.
 UNAVAILABLE_STATES = frozenset({"unavailable", "unknown"})
-UNAVAILABLE_COLOR = "gray_2"
+# The dimmest grey the device offers. An unreachable device is a passive fact,
+# so its pad must sit *below* the "switched off" colour in brightness -- gray_2
+# renders as a mid white and made offline bulbs the loudest thing on the board.
+UNAVAILABLE_COLOR = "gray_1"
 
 
 class LEDManager:

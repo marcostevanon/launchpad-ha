@@ -115,7 +115,7 @@ def test_unavailable_is_not_rendered_as_off():
 
     changes, _ = lm.update_all(dry_run=False)
 
-    assert changes == [(81, "gray_2", 0)]
+    assert changes == [(81, "gray_1", 0)]
 
 
 def test_volume_pad_greys_out_when_its_player_is_unavailable():
@@ -128,7 +128,7 @@ def test_volume_pad_greys_out_when_its_player_is_unavailable():
 
     changes, _ = lm.update_all(dry_run=False)
 
-    assert changes == [(66, "gray_2", 0)]
+    assert changes == [(66, "gray_1", 0)]
 
 
 def test_volume_pad_greys_out_when_the_player_reports_no_level():
@@ -144,7 +144,7 @@ def test_volume_pad_greys_out_when_the_player_reports_no_level():
 
     changes, _ = lm.update_all(dry_run=False)
 
-    assert changes == [(56, "gray_2", 0)]
+    assert changes == [(56, "gray_1", 0)]
 
 
 def test_volume_pad_is_active_when_a_level_is_reported():
