@@ -2,7 +2,13 @@ import logging
 import time
 from typing import Dict, Set, Optional, Any
 
-from src.ha_launchpad.config.mapping import COLOR_PICK_ENABLED, BRIGHTNESS_ENABLED, IDLE_MODE_BUTTON_ID, RESTART_CHORD
+from src.ha_launchpad.config.mapping import (
+    COLOR_PICK_ENABLED,
+    BRIGHTNESS_ENABLED,
+    IDLE_MODE_BUTTON_ID,
+    RESTART_CHORD,
+    RESTART_CHORD_TIMEOUT,
+)
 from src.ha_launchpad.infrastructure.ha.client import HomeAssistantClient
 from src.ha_launchpad.features.color_picker import ColorPicker
 from src.ha_launchpad.features.disco import DiscoMode
@@ -23,6 +29,7 @@ class InputHandler:
         self.disco = disco
         self._palette_selected_notes: Set[int] = set()
         self._last_pressed_note: Optional[int] = None
+        self._last_pressed_at: float = 0.0
 
     def handle_press(self, note: int, is_idle: bool = False) -> Dict[str, Any]:
         """
@@ -35,12 +42,18 @@ class InputHandler:
             return self._handle_color_picker_input(note)
             
         # 1.5 Restart Chord Check
-        if note == RESTART_CHORD[1] and self._last_pressed_note == RESTART_CHORD[0]:
+        now = time.monotonic()
+        if (
+            note == RESTART_CHORD[1]
+            and self._last_pressed_note == RESTART_CHORD[0]
+            and now - self._last_pressed_at <= RESTART_CHORD_TIMEOUT
+        ):
              logger.warning("RESTART SEQUENCE DETECTED (%s->%s)", RESTART_CHORD[0], RESTART_CHORD[1])
              return {"restart": True}
-        
+
         # Update last note
         self._last_pressed_note = note
+        self._last_pressed_at = now
 
         if is_idle:
             return {}

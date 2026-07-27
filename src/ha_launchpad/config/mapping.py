@@ -63,6 +63,7 @@ ALL_PADS: Tuple[int, ...] = tuple(
 # Special Buttons
 IDLE_MODE_BUTTON_ID = 68
 RESTART_CHORD = (15, 16) # First button then second button
+RESTART_CHORD_TIMEOUT = 2.0 # Seconds allowed between the two presses
 
 # Pads that should enter color-pick mode when pressed (keys from BUTTON_MAP)
 COLOR_PICK_ENABLED: Set[int] = {81, 82, 83, 84, 62}

@@ -1,7 +1,7 @@
 import unittest
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, patch
 from src.ha_launchpad.core.logic.input_handler import InputHandler
-from src.ha_launchpad.config.mapping import RESTART_CHORD
+from src.ha_launchpad.config.mapping import RESTART_CHORD, RESTART_CHORD_TIMEOUT
 
 class TestInputHandlerRestart(unittest.TestCase):
     def setUp(self):
@@ -36,6 +36,32 @@ class TestInputHandlerRestart(unittest.TestCase):
         # 2. Second button
         res2 = self.handler.handle_press(RESTART_CHORD[1], is_idle=False)
         self.assertEqual(res2, {"restart": True})
+
+    def test_restart_chord_expires_after_the_timeout(self):
+        with patch(
+            "src.ha_launchpad.core.logic.input_handler.time.monotonic"
+        ) as monotonic:
+            monotonic.return_value = 0.0
+            self.handler.handle_press(RESTART_CHORD[0], is_idle=True)
+
+            # Second press arrives long after the first
+            monotonic.return_value = RESTART_CHORD_TIMEOUT + 0.5
+            res = self.handler.handle_press(RESTART_CHORD[1], is_idle=True)
+
+        self.assertEqual(res, {})
+
+    def test_restart_chord_within_the_timeout_still_fires(self):
+        with patch(
+            "src.ha_launchpad.core.logic.input_handler.time.monotonic"
+        ) as monotonic:
+            monotonic.return_value = 0.0
+            self.handler.handle_press(RESTART_CHORD[0], is_idle=True)
+
+            monotonic.return_value = RESTART_CHORD_TIMEOUT - 0.1
+            res = self.handler.handle_press(RESTART_CHORD[1], is_idle=True)
+
+        self.assertEqual(res, {"restart": True})
+
 
 if __name__ == "__main__":
     unittest.main()
