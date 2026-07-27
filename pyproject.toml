@@ -1,24 +1,34 @@
-[build-system]
-requires = ["setuptools>=61.0","wheel"]
-build-backend = "setuptools.build_meta"
-
 [project]
 name = "ha-launchpad"
 version = "0.1.0"
 description = "Novation Launchpad to Home Assistant bridge"
+readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [
-	"mido>=1.2.10",
-	"requests>=2.0",
-	"python-dotenv>=1.0",
-	"python-rtmidi>=1.4.0",
+    # The rtmidi extra pulls in python-rtmidi, so the backend requirement is
+    # declared by the library that actually needs it.
+    "mido[ports-rtmidi]>=1.3.3",
+    # Imported at module scope by the MIDI backend for USB liveness checks.
+    # This was missing entirely, despite being required to start.
+    "pyusb>=1.3.1",
+    "python-dotenv>=1.2",
+    "requests>=2.32",
 ]
 
-[project.scripts]
-ha-launchpad = "ha_launchpad.cli:main"
+[dependency-groups]
+dev = [
+    "pytest>=9.1",
+    "requests-mock>=1.12",
+]
+
+[tool.uv]
+# Modules still import as `src.ha_launchpad.*`, so there is nothing to build
+# yet. Lifted once the package is importable as `ha_launchpad`.
+package = false
+# Never silently fall back to whatever `python3` happens to be. Production was
+# running 3.9.6 from Apple's Command Line Tools this way.
+python-preference = "only-managed"
 
 [tool.pytest.ini_options]
-# Modules import as `src.ha_launchpad.*`, so the repo root must be importable
-# regardless of how pytest is invoked (bare `pytest`, VS Code test explorer, ...).
 pythonpath = ["."]
 testpaths = ["tests"]
