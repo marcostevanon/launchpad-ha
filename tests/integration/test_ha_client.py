@@ -135,3 +135,41 @@ def test_get_all_states(ha_client):
         states = ha_client.get_all_states()
         assert len(states) == 2
         assert states[0]["entity_id"] == "light.test"
+
+
+def test_media_player_that_is_off_is_powered_on_when_supported(ha_client):
+    with requests_mock.Mocker() as m:
+        m.get(
+            "http://test.local/api/states/media_player.tv",
+            json={"state": "off", "attributes": {"supported_features": 128}},
+        )
+        m.post("http://test.local/api/services/media_player/turn_on", status_code=200)
+
+        assert ha_client.toggle_entity("media_player.tv")
+        assert m.request_history[-1].path.endswith("/media_player/turn_on")
+
+
+def test_media_player_that_is_off_without_turn_on_does_nothing(ha_client):
+    with requests_mock.Mocker() as m:
+        m.get(
+            "http://test.local/api/states/media_player.speaker",
+            json={"state": "off", "attributes": {"supported_features": 4}},
+        )
+
+        assert ha_client.toggle_entity("media_player.speaker")
+        assert all("services" not in r.path for r in m.request_history)
+
+
+def test_active_media_player_toggles_play_pause(ha_client):
+    with requests_mock.Mocker() as m:
+        m.get(
+            "http://test.local/api/states/media_player.tv",
+            json={"state": "playing", "attributes": {"supported_features": 128}},
+        )
+        m.post(
+            "http://test.local/api/services/media_player/media_play_pause",
+            status_code=200,
+        )
+
+        assert ha_client.toggle_entity("media_player.tv")
+        assert m.request_history[-1].path.endswith("/media_play_pause")

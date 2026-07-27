@@ -25,6 +25,10 @@ SERVICE_TIMEOUT = (2.0, 10.0)
 # typically shows up as 502/503.
 RETRYABLE_STATUSES = (408, 429, 500, 502, 503, 504)
 
+# MediaPlayerEntityFeature.TURN_ON. Not every player can be powered on
+# remotely, and calling the service on one that cannot just fails.
+MEDIA_PLAYER_TURN_ON = 128
+
 
 class HomeAssistantUnauthorized(Exception):
     """The token was rejected. No amount of retrying will fix it."""
@@ -196,19 +200,34 @@ class HomeAssistantClient:
         elif domain == "script":
             return self.call_service("script", "turn_on", entity_id)
         elif domain == "media_player":
-            state_data = self.get_state(entity_id)
-            if state_data and state_data.get("state") in ["off", "unavailable"]:
-                logger.debug(
-                    "Media player %s is %s - skipping play/pause command",
-                    entity_id,
-                    state_data.get("state"),
-                )
-                return True
-            # For all media players, use play/pause toggle when active
-            return self.call_service("media_player", "media_play_pause", entity_id)
+            return self._toggle_media_player(entity_id)
         else:
             logger.error("Unknown domain: %s", domain)
             return False
+
+    def _toggle_media_player(self, entity_id: str) -> bool:
+        """Play/pause an active player, or power on one that is off.
+
+        A pad for a switched-off TV that does nothing at all is not much use,
+        so if the player advertises TURN_ON, use it.
+        """
+        state_data = self.get_state(entity_id)
+        state = state_data.get("state") if state_data else None
+
+        if state == "unavailable":
+            logger.debug("Media player %s is unavailable - nothing to do", entity_id)
+            return True
+
+        if state == "off":
+            features = state_data.get("attributes", {}).get("supported_features", 0)
+            if features & MEDIA_PLAYER_TURN_ON:
+                return self.call_service("media_player", "turn_on", entity_id)
+            logger.debug(
+                "Media player %s is off and cannot be turned on remotely", entity_id
+            )
+            return True
+
+        return self.call_service("media_player", "media_play_pause", entity_id)
 
     def volume_up(self, entity_id: str) -> bool:
         """Increase volume of a media player by VOLUME_STEP."""
