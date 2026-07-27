@@ -64,6 +64,22 @@ class HomeAssistantClient:
         logger.info("Called %s.%s for %s", domain, service, entity_id)
         return True
 
+    def is_available(self) -> bool:
+        """Report whether the API answers and accepts our token.
+
+        `GET /api/` is Home Assistant's own health endpoint, so unlike probing
+        an entity this does not depend on anything in particular existing.
+        """
+        resp = self._request_with_retry("GET", f"{self.url}/api/")
+        if resp is None:
+            return False
+
+        try:
+            return resp.json().get("message") == "API running."
+        except ValueError:
+            logger.error("Invalid JSON response from /api/")
+            return False
+
     def get_all_states(self) -> list[Dict[str, Any]]:
         """Fetch all entity states from Home Assistant in one call."""
         endpoint = f"{self.url}/api/states"

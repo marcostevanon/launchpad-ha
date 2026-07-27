@@ -46,6 +46,29 @@ def test_volume_up(ha_client):
         success = ha_client.volume_up("media_player.test")
         assert success
 
+def test_is_available_when_api_answers(ha_client):
+    with requests_mock.Mocker() as m:
+        m.get("http://test.local/api/", json={"message": "API running."})
+
+        assert ha_client.is_available()
+
+
+def test_is_available_false_when_endpoint_missing(ha_client):
+    """A 404 used to read as "connected": get_state returned the truthy dict
+    {"error": "not_found"}, which the startup probe accepted."""
+    with requests_mock.Mocker() as m:
+        m.get("http://test.local/api/", status_code=404)
+
+        assert not ha_client.is_available()
+
+
+def test_is_available_false_on_unexpected_body(ha_client):
+    with requests_mock.Mocker() as m:
+        m.get("http://test.local/api/", json={"message": "nope"})
+
+        assert not ha_client.is_available()
+
+
 def test_get_all_states(ha_client):
     with requests_mock.Mocker() as m:
         m.get("http://test.local/api/states", json=[

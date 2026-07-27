@@ -42,8 +42,7 @@ def main() -> None:
     attempt = 0
     while True:
         attempt += 1
-        test_state = ha_client.get_state("sun.sun")
-        if test_state:
+        if ha_client.is_available():
             logger.info("Connected")
             break
         logger.warning(
