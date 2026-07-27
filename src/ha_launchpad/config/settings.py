@@ -2,15 +2,25 @@ import os
 
 from dotenv import load_dotenv
 
-# Load environment variables
+# Load environment variables. HA_ENV_FILE lets the secrets live outside the
+# deployed code, so releases can be replaced without touching the token and the
+# token never sits inside a git tree.
 try:
-    load_dotenv()
+    _env_file = os.getenv("HA_ENV_FILE")
+    load_dotenv(_env_file) if _env_file else load_dotenv()
 except Exception:
     pass
 
 # Logging
 LOG_LEVEL = os.getenv("LOG_LEVEL", "INFO")
-LOG_FILE = os.getenv("LOG_FILE", "/var/log/ha-launchpad.out.log")
+# Default to somewhere a user agent can actually write. The old default,
+# /var/log, is root-only, and the failure was swallowed silently.
+LOG_FILE = os.getenv(
+    "LOG_FILE",
+    os.path.expanduser("~/Library/Logs/com.launchpad.ha/app.log"),
+)
+LOG_MAX_BYTES = int(os.getenv("LOG_MAX_BYTES", str(5 * 1024 * 1024)))
+LOG_BACKUP_COUNT = int(os.getenv("LOG_BACKUP_COUNT", "5"))
 
 # Home Assistant
 HA_URL = os.getenv("HA_URL")
