@@ -65,7 +65,12 @@ class LEDManager:
                 if not dry_run:
                     self.backend.send_note(note, color, channel)
 
-        self._last_state = current_state
+        # Only bank the new state once it has actually been sent to the board.
+        # A dry run reports what changed without emitting, so recording it here
+        # would leave the cache claiming pads are lit that were never painted.
+        if not dry_run:
+            self._last_state = current_state
+
         return changes_detected, has_notifications
 
     def invalidate_cache(self):
