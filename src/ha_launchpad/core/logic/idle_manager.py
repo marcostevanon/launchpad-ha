@@ -63,7 +63,12 @@ class IdleManager:
         logger.info("Waking up from Sleep Mode")
         self._is_idle = False
         self._manual_sleep = False
-        
+        # Restart the clock. Without this the next check_status() still sees
+        # the pre-sleep timestamp, decides the timeout has long since elapsed,
+        # and puts the board straight back to sleep.
+        self._last_activity_time = time.time()
+
+
         # Controller will be responsible for refreshing LEDs after this returns
 
     def _clear_all_leds(self):

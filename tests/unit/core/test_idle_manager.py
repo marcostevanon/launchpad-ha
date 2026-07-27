@@ -39,6 +39,28 @@ def test_timeout_triggers_idle(idle_manager):
         idle_manager.check_status()
         assert idle_manager.is_idle
 
+def test_wake_up_resets_the_inactivity_timer(idle_manager):
+    """Waking must restart the clock. It used to leave `_last_activity_time`
+    at its old value, so the next status check saw an elapsed time still over
+    the threshold and put the board straight back to sleep."""
+    from src.ha_launchpad.config.settings import IDLE_TIMEOUT
+
+    with patch('time.time') as mock_time:
+        mock_time.return_value = 0
+        idle_manager._last_activity_time = 0
+
+        mock_time.return_value = IDLE_TIMEOUT + 10
+        idle_manager.check_status()
+        assert idle_manager.is_idle
+
+        idle_manager.wake_up()
+        assert not idle_manager.is_idle
+
+        # Without a timer reset this check re-enters sleep immediately.
+        idle_manager.check_status()
+        assert not idle_manager.is_idle
+
+
 def test_wake_up(idle_manager):
     idle_manager.set_manual_sleep()
     assert idle_manager.is_idle
