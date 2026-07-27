@@ -6,11 +6,11 @@ console/testing runs.
 """
 
 import logging
-from typing import Optional
-from ha_launchpad.config.settings import LOG_LEVEL, LOG_FILE
+
+from ha_launchpad.config.settings import LOG_FILE, LOG_LEVEL
 
 
-def configure_logging(level: Optional[int] = None) -> None:
+def configure_logging(level: int | None = None) -> None:
     root = logging.getLogger()
     if root.handlers:
         return

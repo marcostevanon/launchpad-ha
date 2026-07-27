@@ -1,9 +1,10 @@
-import py
-import pytest
 from unittest.mock import MagicMock, patch
-import time
-from ha_launchpad.core.logic.idle_manager import IdleManager
+
+import pytest
+
 from ha_launchpad.config.mapping import IDLE_MODE_BUTTON_ID
+from ha_launchpad.core.logic.idle_manager import IdleManager
+
 
 @pytest.fixture
 def idle_manager():

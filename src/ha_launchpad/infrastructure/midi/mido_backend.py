@@ -1,16 +1,17 @@
 """MIDI backend using mido + python-rtmidi (RtMidi) for Launchpad access."""
 
-import usb.core
-from typing import Optional
 import logging
-import mido
 
+import mido
+import usb.core
+
+from ha_launchpad.config.mapping import COLORS
 from ha_launchpad.config.settings import (
     LAUNCHPAD_IDENT,
-    LAUNCHPAD_VENDOR,
     LAUNCHPAD_PRODUCT,
+    LAUNCHPAD_VENDOR,
 )
-from ha_launchpad.config.mapping import COLORS
+
 from .interface import MidiBackend
 
 logger = logging.getLogger(__name__)
@@ -22,7 +23,7 @@ LIVE_MODE_SYSEX = [0x00, 0x20, 0x29, 0x02, 0x0D, 0x0E, 0x00]
 
 
 class MidoBackend(MidiBackend):
-    def __init__(self, ident: Optional[str] = None):
+    def __init__(self, ident: str | None = None):
         self.usb_device = None
         self.ident = ident or LAUNCHPAD_IDENT
         self.midi_in = None

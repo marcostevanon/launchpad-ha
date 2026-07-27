@@ -1,7 +1,8 @@
 """A mock MIDI backend used for development without hardware."""
 
-from typing import Optional, Any
 import logging
+from typing import Any
+
 from .interface import MidiBackend
 
 logger = logging.getLogger(__name__)
@@ -24,11 +25,10 @@ class MockMidiPort:
 
     def close(self):
         """Mock close method."""
-        pass
 
 
 class MockBackend(MidiBackend):
-    def __init__(self, ident: Optional[str] = None):
+    def __init__(self, ident: str | None = None):
         self.ident = ident or "MOCK"
         self.midi_in = None
         self.midi_out = None
@@ -45,7 +45,7 @@ class MockBackend(MidiBackend):
             "[MOCK] send_note note=%s color=%s channel=%s", note, color, channel
         )
 
-    def iter_incoming(self) -> Optional[Any]:
+    def iter_incoming(self) -> Any | None:
         return self.midi_in
 
     def is_connected(self) -> bool:

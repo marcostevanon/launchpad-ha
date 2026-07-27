@@ -1,8 +1,7 @@
+import logging
+import random
 import threading
 import time
-import random
-import logging
-from typing import List
 
 from ha_launchpad.config.settings import DISCO_LIGHTS, DISCO_SPEED
 

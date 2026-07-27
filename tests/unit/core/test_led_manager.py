@@ -1,5 +1,6 @@
-import pytest
 from unittest.mock import MagicMock
+
+import pytest
 
 from ha_launchpad.core.logic.led_manager import LEDManager
 

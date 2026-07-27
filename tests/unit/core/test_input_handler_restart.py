@@ -1,7 +1,9 @@
 import unittest
 from unittest.mock import MagicMock, patch
-from ha_launchpad.core.logic.input_handler import InputHandler
+
 from ha_launchpad.config.mapping import RESTART_CHORD, RESTART_CHORD_TIMEOUT
+from ha_launchpad.core.logic.input_handler import InputHandler
+
 
 class TestInputHandlerRestart(unittest.TestCase):
     def setUp(self):

@@ -1,6 +1,9 @@
-from typing import Optional, Any
-from ha_launchpad.utils.rotate_pad import rotate_pad, inverse_rotation
+from typing import Any
+
+from ha_launchpad.utils.rotate_pad import inverse_rotation, rotate_pad
+
 from .interface import MidiBackend
+
 
 class RotatedMidiIn:
     """Wrapper for MIDI input iterator that rotates incoming notes."""
@@ -48,7 +51,7 @@ class RotatedBackend(MidiBackend):
         physical_note = rotate_pad(note, self._inv_rotation)
         self._backend.send_note(physical_note, color, channel)
 
-    def iter_incoming(self) -> Optional[Any]:
+    def iter_incoming(self) -> Any | None:
         source = self._backend.iter_incoming()
         if source is None:
             return None

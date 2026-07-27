@@ -1,24 +1,23 @@
 #!/usr/bin/env python3
 """Thin entrypoint for Launchpad <-> Home Assistant controller"""
 
-import time
 import logging
+import time
 
-from ha_launchpad.config.settings import (
-    HA_URL,
-    HA_TOKEN,
-    HA_CONNECT_RETRY_DELAY,
-    HA_CONNECT_MAX_DELAY,
-)
 from ha_launchpad.config.mapping import BUTTON_MAP
-from ha_launchpad.infrastructure.midi.mido_backend import MidoBackend
+from ha_launchpad.config.settings import (
+    HA_CONNECT_MAX_DELAY,
+    HA_CONNECT_RETRY_DELAY,
+    HA_TOKEN,
+    HA_URL,
+)
+from ha_launchpad.core.controller import LaunchpadController
 from ha_launchpad.infrastructure.ha.client import (
     HomeAssistantClient,
     HomeAssistantUnauthorized,
 )
-from ha_launchpad.core.controller import LaunchpadController
+from ha_launchpad.infrastructure.midi.mido_backend import MidoBackend
 from ha_launchpad.logging_config import configure_logging
-
 
 logger = logging.getLogger(__name__)
 

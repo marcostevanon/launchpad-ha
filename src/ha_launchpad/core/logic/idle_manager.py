@@ -1,9 +1,9 @@
-import time
 import logging
-from typing import Dict, Iterable, Optional, Tuple
+import time
+from collections.abc import Iterable
 
-from ha_launchpad.config.settings import IDLE_TIMEOUT, STANDBY_PREVIEW_DURATION
 from ha_launchpad.config.mapping import ALL_PADS, IDLE_MODE_BUTTON_ID
+from ha_launchpad.config.settings import IDLE_TIMEOUT, STANDBY_PREVIEW_DURATION
 from ha_launchpad.infrastructure.midi.interface import MidiBackend
 
 logger = logging.getLogger(__name__)
@@ -16,7 +16,7 @@ class IdleManager:
         self._manual_sleep = False
         self._has_notifications = False
         # note -> time at which its standby preview should be turned back off
-        self._preview_deadlines: Dict[int, float] = {}
+        self._preview_deadlines: dict[int, float] = {}
 
     @property
     def is_idle(self) -> bool:
@@ -77,7 +77,7 @@ class IdleManager:
 
         # Controller will be responsible for refreshing LEDs after this returns
 
-    def show_standby_preview(self, changes: Iterable[Tuple[int, str, int]]) -> None:
+    def show_standby_preview(self, changes: Iterable[tuple[int, str, int]]) -> None:
         """Light the pads whose entities just changed, without leaving sleep.
 
         Turning a lamp on from a wall switch should be visible on a sleeping

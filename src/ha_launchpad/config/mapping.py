@@ -1,7 +1,7 @@
-from typing import Dict, Set, Any, Tuple
+from typing import Any
 
 # Launchpad button mapping (pad number -> HA entity)
-BUTTON_MAP: Dict[int, str] = {
+BUTTON_MAP: dict[int, str] = {
     # living room
     81: "light.living_room_spotlights",
     82: "light.bulb_1",
@@ -56,7 +56,7 @@ BUTTON_MAP: Dict[int, str] = {
 # and columns running 1-8 from the bottom left. Iterating a raw `range(128)`
 # instead sweeps in notes that are not pads at all, and rotating those produces
 # negative note numbers the MIDI layer then rejects one by one.
-ALL_PADS: Tuple[int, ...] = tuple(
+ALL_PADS: tuple[int, ...] = tuple(
     row * 10 + col for row in range(1, 9) for col in range(1, 9)
 )
 
@@ -66,14 +66,14 @@ RESTART_CHORD = (15, 16) # First button then second button
 RESTART_CHORD_TIMEOUT = 2.0 # Seconds allowed between the two presses
 
 # Pads that should enter color-pick mode when pressed (keys from BUTTON_MAP)
-COLOR_PICK_ENABLED: Set[int] = {81, 82, 83, 84, 62}
+COLOR_PICK_ENABLED: set[int] = {81, 82, 83, 84, 62}
 
 # Pads that should show brightness control (keys from BUTTON_MAP)
-BRIGHTNESS_ENABLED: Set[int] = {81, 82, 83, 84, 72, 61, 62}
+BRIGHTNESS_ENABLED: set[int] = {81, 82, 83, 84, 72, 61, 62}
 
 # Mapping: pad -> brightness level (0.0 to 1.0)
 # These will be shown on row 2 (21-28)
-BRIGHTNESS_PALETTE: Dict[int, float] = {
+BRIGHTNESS_PALETTE: dict[int, float] = {
     21: 0.1,
     22: 0.25,
     23: 0.4,
@@ -86,7 +86,7 @@ BRIGHTNESS_PALETTE: Dict[int, float] = {
 
 # Palette display mapping: map pad -> color name in `COLORS` for non-RGB devices.
 # Use these for lighting pads when RGB SysEx isn't available.
-COLOR_PALETTE: Dict[int, Dict[str, Any]] = {
+COLOR_PALETTE: dict[int, dict[str, Any]] = {
     41: {"color": "red_1", "rgb": (255, 0, 0)},
     42: {"color": "blue_1", "rgb": (105, 0, 255)},
     43: {"color": "yellow_3", "rgb": (255, 152, 57)},
@@ -97,7 +97,7 @@ COLOR_PALETTE: Dict[int, Dict[str, Any]] = {
     34: {"color": "white", "rgb": (255, 214, 161)},
 }
 
-COLORS: Dict[str, int] = {
+COLORS: dict[str, int] = {
     # 0–7
     "off": 0,
     "gray_1": 1,

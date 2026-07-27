@@ -1,9 +1,11 @@
 import pytest
 import requests_mock
+
 from ha_launchpad.infrastructure.ha.client import (
     HomeAssistantClient,
     HomeAssistantUnauthorized,
 )
+
 
 @pytest.fixture
 def ha_client():

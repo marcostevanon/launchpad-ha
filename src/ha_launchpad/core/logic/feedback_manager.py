@@ -1,6 +1,6 @@
-import time
 import logging
-from typing import Optional
+import time
+
 from ha_launchpad.infrastructure.midi.interface import MidiBackend
 
 logger = logging.getLogger(__name__)
@@ -14,7 +14,7 @@ class FeedbackManager:
         self.backend.send_note(note, color, channel=2)
         time.sleep(duration)
 
-    def pulse(self, note: int, color: str, duration: float = 0.4, clear_note: Optional[int] = None):
+    def pulse(self, note: int, color: str, duration: float = 0.4, clear_note: int | None = None):
         """Pulse a button, optionally clearing another button."""
         self.backend.send_note(note, color, channel=2)
         

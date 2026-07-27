@@ -1,7 +1,7 @@
 """Home Assistant API wrapper used by the Launchpad controller."""
 
-from typing import Dict, Any, Optional
 import logging
+from typing import Any
 
 import requests
 from requests.adapters import HTTPAdapter
@@ -82,7 +82,7 @@ class HomeAssistantClient:
 
     def _request(
         self, method: str, endpoint: str, *, timeout, **kwargs
-    ) -> Optional[requests.Response]:
+    ) -> requests.Response | None:
         """Perform one logical request.
 
         Transport-level retries and backoff are handled inside urllib3, so this
@@ -153,7 +153,7 @@ class HomeAssistantClient:
             logger.error("Invalid JSON response from /api/")
             return False
 
-    def get_all_states(self) -> list[Dict[str, Any]]:
+    def get_all_states(self) -> list[dict[str, Any]]:
         """Fetch all entity states from Home Assistant in one call.
 
         Returns an empty list if the states could not be fetched, which callers
@@ -170,7 +170,7 @@ class HomeAssistantClient:
             logger.error("Invalid JSON response from /api/states")
             return []
 
-    def get_state(self, entity_id: str) -> Dict[str, Any]:
+    def get_state(self, entity_id: str) -> dict[str, Any]:
         """Get the state of an entity. Returns 'not_found' if entity doesn't exist."""
         endpoint = f"{self.url}/api/states/{entity_id}"
         resp = self._request("GET", endpoint, timeout=POLL_TIMEOUT)

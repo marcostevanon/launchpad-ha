@@ -1,11 +1,11 @@
 import logging
 import random
-from typing import Dict, Set, Any
+from typing import Any
 
 from ha_launchpad.config.settings import DISCO_LIGHTS
-from ha_launchpad.infrastructure.midi.interface import MidiBackend
-from ha_launchpad.infrastructure.ha.client import HomeAssistantClient
 from ha_launchpad.features.disco import DiscoMode
+from ha_launchpad.infrastructure.ha.client import HomeAssistantClient
+from ha_launchpad.infrastructure.midi.interface import MidiBackend
 
 logger = logging.getLogger(__name__)
 
@@ -14,15 +14,15 @@ class LEDManager:
         self, 
         ha_client: HomeAssistantClient, 
         backend: MidiBackend,
-        button_map: Dict[int, str],
+        button_map: dict[int, str],
         disco_mode: DiscoMode
     ):
         self.ha_client = ha_client
         self.backend = backend
         self.button_map = button_map
         self.disco = disco_mode
-        self._unknown_entities: Set[str] = set()
-        self._last_state: Dict[int, str] = {}
+        self._unknown_entities: set[str] = set()
+        self._last_state: dict[int, str] = {}
         self._warned_no_states = False
 
     def update_all(self, dry_run: bool = False) -> tuple[list, bool]:
@@ -95,7 +95,7 @@ class LEDManager:
         """Force next update to resend all states."""
         self._last_state = {}
 
-    def _determine_color(self, entity_id: str, state_map: Dict[str, Any]):
+    def _determine_color(self, entity_id: str, state_map: dict[str, Any]):
         """Determine the color and channel for a given entity."""
         # Special cases
         if entity_id == "disco_toggle":
@@ -108,7 +108,7 @@ class LEDManager:
         if entity_id == "manual_sleep":
             return "lightblue_0", 0
         
-        if entity_id.startswith("volume_up.") or entity_id.startswith("volume_down."):
+        if entity_id.startswith(("volume_up.", "volume_down.")):
             return self._get_volume_button_color(entity_id, state_map)
 
         # Standard entities
@@ -151,7 +151,7 @@ class LEDManager:
         self._unknown_entities.add(entity_id)
         return "red_2", 0
 
-    def _get_volume_button_color(self, entity_id: str, state_map: Dict[str, Any]):
+    def _get_volume_button_color(self, entity_id: str, state_map: dict[str, Any]):
         target = entity_id.split(".", 1)[1]
         if "nestmini" in target or "studio_speaker" in target:
             state = state_map.get(target)
@@ -160,7 +160,7 @@ class LEDManager:
             return "off", 0
         return "purple_1", 0
     
-    def _get_dimmed_color(self, attributes: Dict):
+    def _get_dimmed_color(self, attributes: dict):
         brightness = attributes.get("brightness", 255)
         if brightness <= 85:
             return "green_3"

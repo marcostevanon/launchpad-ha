@@ -1,40 +1,39 @@
 """Launchpad MIDI controller abstraction."""
 
-from typing import Dict, Any, Optional
-import time
-import threading
 import logging
 import signal
 import sys
+import threading
+import time
 
-from ha_launchpad.config.settings import (
-    LAUNCHPAD_ROTATION,
-    LAUNCHPAD_ALIVE_DELAY,
-    LAUNCHPAD_RETRY_DELAY,
-    LAUNCHPAD_MAX_RETRY_DELAY,
-    POLL_INTERVAL,
-    IDLE_POLL_INTERVAL,
-)
 from ha_launchpad.config.mapping import (
     ALL_PADS,
-    COLOR_PICK_ENABLED,
     BRIGHTNESS_ENABLED,
+    COLOR_PICK_ENABLED,
 )
-from ha_launchpad.infrastructure.midi.interface import MidiBackend
-from ha_launchpad.infrastructure.midi.mido_backend import MidoBackend
-from ha_launchpad.infrastructure.midi.rotated_backend import RotatedBackend
+from ha_launchpad.config.settings import (
+    IDLE_POLL_INTERVAL,
+    LAUNCHPAD_ALIVE_DELAY,
+    LAUNCHPAD_MAX_RETRY_DELAY,
+    LAUNCHPAD_RETRY_DELAY,
+    LAUNCHPAD_ROTATION,
+    POLL_INTERVAL,
+)
+from ha_launchpad.core.logic.feedback_manager import FeedbackManager
+from ha_launchpad.core.logic.idle_manager import IdleManager
+from ha_launchpad.core.logic.input_handler import InputHandler
+
+# New Logic Components
+from ha_launchpad.core.logic.led_manager import LEDManager
+from ha_launchpad.features.color_picker import ColorPicker
+from ha_launchpad.features.disco import DiscoMode
 from ha_launchpad.infrastructure.ha.client import (
     HomeAssistantClient,
     HomeAssistantUnauthorized,
 )
-from ha_launchpad.features.disco import DiscoMode
-from ha_launchpad.features.color_picker import ColorPicker
-
-# New Logic Components
-from ha_launchpad.core.logic.led_manager import LEDManager
-from ha_launchpad.core.logic.input_handler import InputHandler
-from ha_launchpad.core.logic.feedback_manager import FeedbackManager
-from ha_launchpad.core.logic.idle_manager import IdleManager
+from ha_launchpad.infrastructure.midi.interface import MidiBackend
+from ha_launchpad.infrastructure.midi.mido_backend import MidoBackend
+from ha_launchpad.infrastructure.midi.rotated_backend import RotatedBackend
 
 logger = logging.getLogger(__name__)
 
@@ -43,8 +42,8 @@ class LaunchpadController:
     def __init__(
         self, 
         ha_client: HomeAssistantClient, 
-        button_map: Dict[int, str], 
-        backend: Optional[MidiBackend] = None
+        button_map: dict[int, str], 
+        backend: MidiBackend | None = None
     ):
         if backend is None:
             backend = MidoBackend()
@@ -66,7 +65,7 @@ class LaunchpadController:
         self.idle_manager = IdleManager(self.backend)
         
         self.running = False
-        self._press_times: Dict[int, float] = {}
+        self._press_times: dict[int, float] = {}
 
     def _install_signal_handlers(self):
         """Request a graceful shutdown on SIGTERM/SIGINT.

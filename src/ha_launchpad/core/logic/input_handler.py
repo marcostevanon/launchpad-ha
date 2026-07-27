@@ -1,17 +1,15 @@
 import logging
 import time
-from typing import Dict, Set, Optional, Any
+from typing import Any
 
 from ha_launchpad.config.mapping import (
-    COLOR_PICK_ENABLED,
-    BRIGHTNESS_ENABLED,
     IDLE_MODE_BUTTON_ID,
     RESTART_CHORD,
     RESTART_CHORD_TIMEOUT,
 )
-from ha_launchpad.infrastructure.ha.client import HomeAssistantClient
 from ha_launchpad.features.color_picker import ColorPicker
 from ha_launchpad.features.disco import DiscoMode
+from ha_launchpad.infrastructure.ha.client import HomeAssistantClient
 
 logger = logging.getLogger(__name__)
 
@@ -19,7 +17,7 @@ class InputHandler:
     def __init__(
         self,
         ha_client: HomeAssistantClient,
-        button_map: Dict[int, str],
+        button_map: dict[int, str],
         color_picker: ColorPicker,
         disco: DiscoMode
     ):
@@ -27,11 +25,11 @@ class InputHandler:
         self.button_map = button_map
         self.color_picker = color_picker
         self.disco = disco
-        self._palette_selected_notes: Set[int] = set()
-        self._last_pressed_note: Optional[int] = None
+        self._palette_selected_notes: set[int] = set()
+        self._last_pressed_note: int | None = None
         self._last_pressed_at: float = 0.0
 
-    def handle_press(self, note: int, is_idle: bool = False) -> Dict[str, Any]:
+    def handle_press(self, note: int, is_idle: bool = False) -> dict[str, Any]:
         """
         Handle a button press. 
         Returns a dict of actions for the controller to perform.

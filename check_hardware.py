@@ -2,13 +2,14 @@
 """
 Simple script to check Launchpad hardware connection and LED functionality.
 """
-import time
 import sys
+import time
 
+from ha_launchpad.config.mapping import ALL_PADS
+from ha_launchpad.config.settings import LAUNCHPAD_ROTATION
 from ha_launchpad.infrastructure.midi.mido_backend import MidoBackend
 from ha_launchpad.infrastructure.midi.rotated_backend import RotatedBackend
-from ha_launchpad.config.settings import LAUNCHPAD_ROTATION
-from ha_launchpad.config.mapping import ALL_PADS
+
 
 def main():
     print("Checking for Launchpad...")

@@ -2,10 +2,16 @@ import ast
 from pathlib import Path
 
 from ha_launchpad.config import mapping as mapping_module
-from ha_launchpad.config.mapping import BUTTON_MAP, COLOR_PICK_ENABLED, COLORS, COLOR_PALETTE
+from ha_launchpad.config.mapping import (
+    BUTTON_MAP,
+    COLOR_PALETTE,
+    COLOR_PICK_ENABLED,
+    COLORS,
+)
+
 
 def test_button_map_keys_are_integers():
-    for key in BUTTON_MAP.keys():
+    for key in BUTTON_MAP:
         assert isinstance(key, int)
 
 def test_button_map_values_are_strings():
