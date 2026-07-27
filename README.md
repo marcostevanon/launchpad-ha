@@ -65,7 +65,33 @@ uv run python check_hardware.py
 
 The service runs on an always-on Mac as a user LaunchAgent. It must be an *agent* rather than a daemon: CoreMIDI is only reachable from the per-user GUI bootstrap namespace.
 
-One-time setup on the target machine — install `uv`, then create the secrets file outside the deploy path:
+### One-time: allow the interpreter on the local network
+
+macOS gates local network access per executable, and a LaunchAgent is **not**
+exempt the way an Apple-signed binary is. The uv-managed Python needs approving
+once in **System Settings → Privacy & Security → Local Network**:
+
+```
+~/.local/share/uv/python/cpython-<version>-macos-<arch>-none/bin/python3.11
+```
+
+Without it the service starts, reads its config, and then fails every request
+with `[Errno 65] No route to host` while Home Assistant is plainly reachable.
+
+Two things make this confusing, so they are worth knowing up front:
+
+- **Testing over SSH will not reveal it.** An SSH session inherits `sshd`'s
+  grant, so the same check passes there and fails under launchd. `deploy.sh`
+  therefore runs its self-test as a transient launchd agent, not over the SSH
+  connection.
+- The path above is **shared by every release** — each release's virtualenv
+  symlinks to that one interpreter — so this is approved once, not per deploy.
+  Changing Python version means approving again.
+
+### One-time: secrets and uv
+
+Install `uv` on the target machine, then create the secrets file outside the
+deploy path:
 
 ```bash
 mkdir -p ~/.local/launchpad-ha/shared

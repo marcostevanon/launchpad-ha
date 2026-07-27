@@ -64,7 +64,9 @@ class InputHandler:
             return {"sleep": True}
 
         if note not in self.button_map:
-            logger.warning("Unmapped button: %s", note)
+            # Most of the grid is deliberately unmapped, and the restart chord
+            # is two unmapped pads pressed on purpose. Not a warning.
+            logger.debug("Unmapped button: %s", note)
             return {}
 
         entity_id = self.button_map[note]
