@@ -4,6 +4,7 @@ from typing import Dict, Any, Optional
 import time
 import threading
 import logging
+import signal
 import sys
 
 from src.ha_launchpad.config.settings import (
@@ -58,6 +59,26 @@ class LaunchpadController:
         
         self.running = False
         self._press_times: Dict[int, float] = {}
+
+    def _install_signal_handlers(self):
+        """Request a graceful shutdown on SIGTERM/SIGINT.
+
+        launchd sends SIGTERM on `bootout` and `kickstart -k`. Without a
+        handler the process dies on the spot, so the `finally` block in run()
+        never executes: the LEDs stay lit and the MIDI ports are never closed.
+        """
+
+        def _request_shutdown(signum, _frame):
+            logger.info("Received %s - shutting down...", signal.Signals(signum).name)
+            self.running = False
+
+        for sig in (signal.SIGTERM, signal.SIGINT):
+            try:
+                signal.signal(sig, _request_shutdown)
+            except ValueError:
+                # Only the main thread may install handlers; the caller is then
+                # responsible for driving shutdown itself.
+                logger.debug("Could not install handler for %s", sig)
 
     def find_launchpad(self):
         """Find and open Launchpad MIDI ports using the provided backend."""
@@ -307,10 +328,13 @@ class LaunchpadController:
 
     def run(self):
         """Main run loop"""
+        self._install_signal_handlers()
+        self.running = True
+
         attempt = 0
         max_attempts = 30
-        
-        while attempt < max_attempts:
+
+        while self.running and attempt < max_attempts:
             attempt += 1
             if self.find_launchpad():
                 logger.info("✓ Launchpad HA Controller started!")
@@ -325,11 +349,14 @@ class LaunchpadController:
             )
             time.sleep(delay)
 
+        if not self.running:
+            logger.info("Shutdown requested before startup completed")
+            self.close_backend()
+            return
+
         logger.info("Press Ctrl+C to exit")
         self.clear_all_leds(splash=True)
         self.update_led_states()
-
-        self.running = True
 
         try:
             poll_thread = threading.Thread(target=self.state_polling_thread, daemon=True)
