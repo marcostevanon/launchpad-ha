@@ -1,60 +1,114 @@
 """Home Assistant API wrapper used by the Launchpad controller."""
 
 from typing import Dict, Any, Optional
-import time
-import requests
 import logging
 
+import requests
+from requests.adapters import HTTPAdapter
+from urllib3.util.retry import Retry
+
 from src.ha_launchpad.config.settings import (
-    HA_REQUEST_RETRY_DELAY,
     HA_REQUEST_MAX_DELAY,
     VOLUME_STEP,
 )
 
 logger = logging.getLogger(__name__)
 
+# (connect, read) timeouts. The read budget for polling has to fit inside the
+# poll interval, otherwise one slow response stalls every LED update behind it.
+POLL_TIMEOUT = (2.0, 3.0)
+# Service calls block until Home Assistant has finished running them, which for
+# a cloud-backed light or a speaker is legitimately slow.
+SERVICE_TIMEOUT = (2.0, 10.0)
+
+# Transient server-side conditions; a restarting Home Assistant behind a proxy
+# typically shows up as 502/503.
+RETRYABLE_STATUSES = (408, 429, 500, 502, 503, 504)
+
+
+class HomeAssistantUnauthorized(Exception):
+    """The token was rejected. No amount of retrying will fix it."""
+
 
 class HomeAssistantClient:
     def __init__(self, url: str, token: str):
         self.url = url.rstrip("/")
-        self.headers = {
-            "Authorization": f"Bearer {token}",
-            "Content-Type": "application/json",
-        }
         self.session = requests.Session()
+        self.session.headers.update(
+            {
+                "Authorization": f"Bearer {token}",
+                "Accept": "application/json",
+            }
+        )
 
-    def _request_with_retry(
-        self, method: str, endpoint: str, **kwargs
+        retry = Retry(
+            total=2,
+            connect=2,
+            read=2,
+            status=2,
+            backoff_factor=0.3,
+            backoff_max=HA_REQUEST_MAX_DELAY,
+            backoff_jitter=0.2,
+            status_forcelist=RETRYABLE_STATUSES,
+            # Read and status retries are gated by method. A POST that timed
+            # out on read may well have run the service already, and replaying
+            # `light.toggle` would flip the light straight back. Connect
+            # failures are not gated, because there the request provably never
+            # reached Home Assistant.
+            allowed_methods=frozenset(["GET"]),
+            respect_retry_after_header=True,
+            raise_on_status=False,
+        )
+        adapter = HTTPAdapter(max_retries=retry, pool_connections=2, pool_maxsize=4)
+        self.session.mount("http://", adapter)
+        self.session.mount("https://", adapter)
+
+    def _request(
+        self, method: str, endpoint: str, *, timeout, **kwargs
     ) -> Optional[requests.Response]:
-        """Perform an HTTP request with retry/backoff."""
-        delay = HA_REQUEST_RETRY_DELAY
+        """Perform one logical request.
 
-        while True:
-            try:
-                resp = self.session.request(
-                    method, endpoint, headers=self.headers, timeout=5, **kwargs
-                )
-                resp.raise_for_status()
-                return resp
-            except requests.exceptions.HTTPError as e:
-                # Don't retry 404s - entity doesn't exist
-                if e.response.status_code == 404:
-                    logger.debug("Entity not found (404). Error: %s", e)
-                    return None
-            except requests.exceptions.RequestException as e:
-                logger.warning(
-                    "Connection to Home Assistant failed. Retrying... Error: %s", e
-                )
-                time.sleep(min(delay, HA_REQUEST_MAX_DELAY))
-                delay = min(delay * 2, HA_REQUEST_MAX_DELAY)
-                continue
+        Transport-level retries and backoff are handled inside urllib3, so this
+        always terminates. Returns None when the request could not be
+        completed; raises only when the failure is not worth retrying at all.
+        """
+        try:
+            resp = self.session.request(
+                method, endpoint, timeout=timeout, **kwargs
+            )
+        except requests.exceptions.RequestException as e:
+            logger.warning("Home Assistant unreachable (%s %s): %s", method, endpoint, e)
+            return None
+
+        if resp.status_code == 401:
+            # Retrying a rejected token achieves nothing and, if Home Assistant
+            # has IP banning enabled, will eventually lock this host out.
+            raise HomeAssistantUnauthorized(
+                f"Home Assistant rejected the access token: {resp.text[:200]}"
+            )
+
+        if resp.status_code == 404:
+            logger.debug("Not found (404): %s", endpoint)
+            return None
+
+        if resp.status_code >= 400:
+            logger.error(
+                "Home Assistant returned %s for %s %s: %s",
+                resp.status_code,
+                method,
+                endpoint,
+                resp.text[:200],
+            )
+            return None
+
+        return resp
 
     def call_service(self, domain: str, service: str, entity_id: str, **kwargs) -> bool:
         """Call a Home Assistant service"""
         endpoint = f"{self.url}/api/services/{domain}/{service}"
         data = {"entity_id": entity_id, **kwargs}
 
-        resp = self._request_with_retry("POST", endpoint, json=data)
+        resp = self._request("POST", endpoint, timeout=SERVICE_TIMEOUT, json=data)
         if resp is None:
             logger.error(
                 "Error calling service %s.%s for %s", domain, service, entity_id
@@ -70,7 +124,7 @@ class HomeAssistantClient:
         `GET /api/` is Home Assistant's own health endpoint, so unlike probing
         an entity this does not depend on anything in particular existing.
         """
-        resp = self._request_with_retry("GET", f"{self.url}/api/")
+        resp = self._request("GET", f"{self.url}/api/", timeout=POLL_TIMEOUT)
         if resp is None:
             return False
 
@@ -81,12 +135,16 @@ class HomeAssistantClient:
             return False
 
     def get_all_states(self) -> list[Dict[str, Any]]:
-        """Fetch all entity states from Home Assistant in one call."""
+        """Fetch all entity states from Home Assistant in one call.
+
+        Returns an empty list if the states could not be fetched, which callers
+        must treat as "unknown" rather than "nothing is on".
+        """
         endpoint = f"{self.url}/api/states"
-        resp = self._request_with_retry("GET", endpoint)
+        resp = self._request("GET", endpoint, timeout=POLL_TIMEOUT)
         if resp is None:
             return []
-            
+
         try:
             return resp.json()
         except ValueError:
@@ -96,7 +154,7 @@ class HomeAssistantClient:
     def get_state(self, entity_id: str) -> Dict[str, Any]:
         """Get the state of an entity. Returns 'not_found' if entity doesn't exist."""
         endpoint = f"{self.url}/api/states/{entity_id}"
-        resp = self._request_with_retry("GET", endpoint)
+        resp = self._request("GET", endpoint, timeout=POLL_TIMEOUT)
         if resp is None:
             return {"error": "not_found"}
 

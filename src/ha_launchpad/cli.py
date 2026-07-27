@@ -12,7 +12,10 @@ from src.ha_launchpad.config.settings import (
 )
 from src.ha_launchpad.config.mapping import BUTTON_MAP
 from src.ha_launchpad.infrastructure.midi.mido_backend import MidoBackend
-from src.ha_launchpad.infrastructure.ha.client import HomeAssistantClient
+from src.ha_launchpad.infrastructure.ha.client import (
+    HomeAssistantClient,
+    HomeAssistantUnauthorized,
+)
 from src.ha_launchpad.core.controller import LaunchpadController
 from src.ha_launchpad.logging_config import configure_logging
 
@@ -42,9 +45,14 @@ def main() -> None:
     attempt = 0
     while True:
         attempt += 1
-        if ha_client.is_available():
-            logger.info("Connected")
-            break
+        try:
+            if ha_client.is_available():
+                logger.info("Connected")
+                break
+        except HomeAssistantUnauthorized as exc:
+            logger.error("%s", exc)
+            logger.error("Check HA_TOKEN in your .env - it is invalid or revoked.")
+            raise SystemExit(1)
         logger.warning(
             "Failed to connect to Home Assistant. Check URL and token or wait for HA to become available."
         )

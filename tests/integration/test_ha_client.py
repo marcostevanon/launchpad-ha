@@ -1,6 +1,9 @@
 import pytest
 import requests_mock
-from src.ha_launchpad.infrastructure.ha.client import HomeAssistantClient
+from src.ha_launchpad.infrastructure.ha.client import (
+    HomeAssistantClient,
+    HomeAssistantUnauthorized,
+)
 
 @pytest.fixture
 def ha_client():
@@ -45,6 +48,38 @@ def test_volume_up(ha_client):
         
         success = ha_client.volume_up("media_player.test")
         assert success
+
+def test_server_error_gives_up_instead_of_looping(ha_client):
+    """A non-404 HTTP error used to fall out of the except block and re-issue
+    the request immediately, with no sleep and no attempt cap -- an unthrottled
+    hot loop against Home Assistant that never returned to the caller."""
+    with requests_mock.Mocker() as m:
+        m.get("http://test.local/api/states", status_code=500)
+
+        states = ha_client.get_all_states()
+
+        assert states == []
+        assert m.call_count == 1
+
+
+def test_unauthorized_is_raised_not_retried(ha_client):
+    """A rejected token cannot be fixed by retrying, and repeated attempts can
+    trip Home Assistant's IP ban."""
+    with requests_mock.Mocker() as m:
+        m.get("http://test.local/api/states", status_code=401, text="bad token")
+
+        with pytest.raises(HomeAssistantUnauthorized):
+            ha_client.get_all_states()
+
+        assert m.call_count == 1
+
+
+def test_service_call_failure_returns_false(ha_client):
+    with requests_mock.Mocker() as m:
+        m.post("http://test.local/api/services/light/toggle", status_code=503)
+
+        assert ha_client.toggle_entity("light.test") is False
+
 
 def test_is_available_when_api_answers(ha_client):
     with requests_mock.Mocker() as m:

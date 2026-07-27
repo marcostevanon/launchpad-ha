@@ -22,7 +22,10 @@ from src.ha_launchpad.config.mapping import (
 from src.ha_launchpad.infrastructure.midi.interface import MidiBackend
 from src.ha_launchpad.infrastructure.midi.mido_backend import MidoBackend
 from src.ha_launchpad.infrastructure.midi.rotated_backend import RotatedBackend
-from src.ha_launchpad.infrastructure.ha.client import HomeAssistantClient
+from src.ha_launchpad.infrastructure.ha.client import (
+    HomeAssistantClient,
+    HomeAssistantUnauthorized,
+)
 from src.ha_launchpad.features.disco import DiscoMode
 from src.ha_launchpad.features.color_picker import ColorPicker
 
@@ -155,9 +158,18 @@ class LaunchpadController:
         """Background thread to poll HA states and update LEDs"""
         logger.info("Starting state polling (interval: %ss)", POLL_INTERVAL)
         while self.running:
-            self.idle_manager.check_status() # Check for idle timeout
-            self.update_led_states()
-            
+            try:
+                self.idle_manager.check_status() # Check for idle timeout
+                self.update_led_states()
+            except HomeAssistantUnauthorized as exc:
+                # Retrying cannot help, and hammering a rejected token risks
+                # tripping Home Assistant's IP ban. Exit and let the service
+                # manager restart us once the token has been fixed.
+                logger.error("%s", exc)
+                self.running = False
+                return
+
+
             # Variable polling interval
             if self.idle_manager.is_idle:
                 time.sleep(120) # Poll slower when idle

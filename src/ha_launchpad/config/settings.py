@@ -18,7 +18,8 @@ POLL_INTERVAL = float(os.getenv("POLL_INTERVAL", "1.5"))
 
 HA_CONNECT_RETRY_DELAY = float(os.getenv("HA_CONNECT_RETRY_DELAY", "3.0"))
 HA_CONNECT_MAX_DELAY = float(os.getenv("HA_CONNECT_MAX_DELAY", "30.0"))
-HA_REQUEST_RETRY_DELAY = float(os.getenv("HA_REQUEST_RETRY_DELAY", "2.0"))
+# Ceiling for urllib3's per-request backoff. The growth curve itself is owned
+# by the retry policy in the HA client, so there is no separate initial delay.
 HA_REQUEST_MAX_DELAY = float(os.getenv("HA_REQUEST_MAX_DELAY", "5.0"))
 
 # Volume
