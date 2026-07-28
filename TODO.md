@@ -75,6 +75,14 @@ integration answers this in two minutes.
 
 # Completed
 
+## Vinyl
+- Pad 74 powers the rig; 45 and 46 stay grey until the Raspberry Pi answers a
+  ping, because the Pi lives on a switched strip and is off most of the time
+- The Icecast mount now falls back to looping silence, so a source blip no
+  longer ends playback permanently
+- Latency ~8s to ~6s, which is the floor for this architecture
+- See `docs/vinyl-streaming.md`
+
 ## TV
 - Pad 58 powers the television off through `google_assistant_sdk`, which is
   the only route that reaches it: the cast integration's turn_off is just
