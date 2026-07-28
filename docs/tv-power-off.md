@@ -47,6 +47,23 @@ CEC Control). Without it nothing below has any effect.
 
 No billing account and no Workspace account are required.
 
+### If authorisation is refused
+
+> Access blocked: … has not completed the Google verification process.
+> The app is currently being tested and can only be accessed by
+> developer-approved testers. Error 403: access_denied
+
+That is step 3 not done: the app is still in *Testing*, and this account is not
+on its tester list. Publish it rather than adding yourself as a tester —
+otherwise the refresh tokens expire weekly.
+
+After publishing, the consent screen warns that Google has not verified the app.
+Take *Advanced → Go to … (unsafe)*. The Assistant SDK scope counts as sensitive,
+and formal verification only matters for distributing an app to other people.
+
+Do not name the Google Cloud app after a domain you do not own, or publishing
+can be refused.
+
 ## The script
 
 The entity ID must be exactly `script.tv_off`, which is what
