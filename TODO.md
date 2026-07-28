@@ -49,8 +49,8 @@ integration answers this in two minutes.
 ## Small features worth having
 - A `status.<entity>` mapping form: press does nothing, the LED reflects state.
   The plant pads already work this way as a hardcoded special case. Would
-  unlock low battery (`sensor.switch_bedroom_battery` is at 10%), humidifier
-  overload, pending updates, shopping list.
+  unlock low battery (`sensor.switch_bedroom_battery` is at 10%), the vinyl
+  plug being overloaded, pending updates, shopping list.
 - `button.press` support, for things like "save the current track".
 - `next.` / `prev.` for the Sonos, which supports both.
 - Generalise the standby notification indicator beyond plants.
