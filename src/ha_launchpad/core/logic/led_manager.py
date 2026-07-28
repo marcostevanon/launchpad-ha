@@ -2,6 +2,7 @@ import logging
 import random
 from typing import Any
 
+from ha_launchpad.config.mapping import PAD_AVAILABILITY
 from ha_launchpad.config.settings import DISCO_LIGHTS
 from ha_launchpad.features.disco import DiscoMode
 from ha_launchpad.infrastructure.ha.client import (
@@ -78,6 +79,11 @@ class LEDManager:
 
             color, channel = self._determine_color(entity_id, state_map)
 
+            # A pad can be pointed at a perfectly healthy entity and still be
+            # useless, if the thing behind it is not there.
+            if not self._dependency_is_up(note, state_map):
+                color, channel = UNAVAILABLE_COLOR, 0
+
             # Track reachability regardless of dry_run: this is what Home
             # Assistant reports, not what is currently on the board.
             if color == UNAVAILABLE_COLOR:
@@ -107,6 +113,25 @@ class LEDManager:
             self._last_state = current_state
 
         return changes, has_notifications
+
+    def _dependency_is_up(self, note: int, state_map: dict[str, Any]) -> bool:
+        """Whether the thing this pad quietly depends on is actually there.
+
+        See PAD_AVAILABILITY: the vinyl pads call a script, and a script
+        exists whether or not the Raspberry Pi behind it has power.
+        """
+        gate = PAD_AVAILABILITY.get(note)
+        if gate is None:
+            return True
+
+        state_data = state_map.get(gate)
+        if not state_data:
+            if gate not in self._missing_entities:
+                logger.warning("Availability gate does not exist: %s", gate)
+                self._missing_entities.add(gate)
+            return False
+
+        return state_data.get("state") == "on"
 
     def is_unavailable(self, note: int) -> bool:
         """Whether this pad's entity was unreachable at the last poll."""

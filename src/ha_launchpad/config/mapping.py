@@ -61,6 +61,20 @@ ALL_PADS: tuple[int, ...] = tuple(
     row * 10 + col for row in range(1, 9) for col in range(1, 9)
 )
 
+# Pads that quietly depend on something other than the entity they point at.
+#
+# The vinyl pads call a Home Assistant script, and a script exists whether or
+# not it can do anything -- so they looked perfectly live while the Raspberry
+# Pi that produces the stream sat unplugged, and pressing one could only fail.
+# The Pi lives on a switched power strip that is off most of the time, so this
+# is the normal case rather than a fault.
+#
+# Each value names an entity that has to be `on` for the pad to mean anything.
+PAD_AVAILABILITY: dict[int, str] = {
+    45: "binary_sensor.vinyl_pi",
+    46: "binary_sensor.vinyl_pi",
+}
+
 # Special Buttons
 IDLE_MODE_BUTTON_ID = 68
 RESTART_CHORD = (15, 16)  # First button then second button

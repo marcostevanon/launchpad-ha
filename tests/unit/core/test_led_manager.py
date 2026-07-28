@@ -162,6 +162,83 @@ def test_a_missing_entity_recovers_once_it_appears(led_manager):
     assert not led_manager.is_unavailable(81)
 
 
+def _vinyl_manager():
+    disco = MagicMock()
+    disco.active = False
+    return LEDManager(
+        MagicMock(), MagicMock(), {45: "script.vinyl_play_on_sonos"}, disco
+    )
+
+
+def test_pad_greys_out_when_the_thing_behind_it_is_powered_off(monkeypatch):
+    """The vinyl script always exists, so its pad looked live even with the
+    Raspberry Pi that produces the stream unplugged."""
+    monkeypatch.setattr(
+        "ha_launchpad.core.logic.led_manager.PAD_AVAILABILITY",
+        {45: "binary_sensor.vinyl_pi"},
+    )
+    lm = _vinyl_manager()
+    lm.ha_client.get_all_states.return_value = [
+        {"entity_id": "script.vinyl_play_on_sonos", "state": "off", "attributes": {}},
+        {"entity_id": "binary_sensor.vinyl_pi", "state": "off", "attributes": {}},
+    ]
+
+    changes, _ = lm.update_all(dry_run=False)
+
+    assert changes == [(45, "gray_1", 0)]
+    assert lm.is_unavailable(45)
+
+
+def test_pad_lights_normally_once_the_dependency_is_up(monkeypatch):
+    monkeypatch.setattr(
+        "ha_launchpad.core.logic.led_manager.PAD_AVAILABILITY",
+        {45: "binary_sensor.vinyl_pi"},
+    )
+    lm = _vinyl_manager()
+    lm.ha_client.get_all_states.return_value = [
+        {"entity_id": "script.vinyl_play_on_sonos", "state": "off", "attributes": {}},
+        {"entity_id": "binary_sensor.vinyl_pi", "state": "on", "attributes": {}},
+    ]
+
+    changes, _ = lm.update_all(dry_run=False)
+
+    assert changes == [(45, "purple_1", 0)]
+    assert not lm.is_unavailable(45)
+
+
+def test_a_missing_gate_entity_closes_the_pad(monkeypatch):
+    """Better a dead pad than one that fires a call which cannot work."""
+    monkeypatch.setattr(
+        "ha_launchpad.core.logic.led_manager.PAD_AVAILABILITY",
+        {45: "binary_sensor.typo"},
+    )
+    lm = _vinyl_manager()
+    lm.ha_client.get_all_states.return_value = [
+        {"entity_id": "script.vinyl_play_on_sonos", "state": "off", "attributes": {}}
+    ]
+
+    changes, _ = lm.update_all(dry_run=False)
+
+    assert changes == [(45, "gray_1", 0)]
+
+
+def test_pads_without_a_gate_are_untouched(monkeypatch):
+    monkeypatch.setattr(
+        "ha_launchpad.core.logic.led_manager.PAD_AVAILABILITY",
+        {45: "binary_sensor.vinyl_pi"},
+    )
+    disco = MagicMock()
+    disco.active = False
+    lm = LEDManager(MagicMock(), MagicMock(), {81: "light.a"}, disco)
+    lm.ha_client.get_all_states.return_value = [
+        {"entity_id": "light.a", "state": "on", "attributes": {"brightness": 255}}
+    ]
+
+    changes, _ = lm.update_all(dry_run=False)
+
+    assert changes == [(81, "green_1", 0)]
+
+
 def test_idle_player_with_an_empty_queue_greys_out():
     """It looked identical to a paused player, so it invited a press that
     could only come back as an HTTP 500."""
