@@ -145,6 +145,28 @@ Two automations drive it, and both guards exist for a reason:
 A smart plug cannot do this job: a turntable motor draws 1–2 W, below the
 P110's reliable resolution, and the plug also feeds the Pi and the amplifier.
 
+### Measured behaviour
+
+Needle down to sound on the Sonos is **~12.5 seconds**, and it did not vary:
+12.0 s and 12.0 s from a cold start, 12.6 s while taking the speaker away from a
+live AirPlay session. Five of those are the trigger's `for`, the rest is the
+script, Music Assistant and the Sonos opening the stream. Dropping the `for` to
+2 s would buy three of them back; the margin is there, since the threshold sits
+25 dB above the idle floor.
+
+**Taking over a running session works cleanly.** With an iPhone mid-AirPlay the
+Sonos went from `source: AirPlay` to `source: Music Assistant Queue` in a single
+transition — no flapping, no reclaim attempt — and the phone fell back to
+playing locally. This was the case worth doubting: an AirPlay session is a
+`x-sonos-vli` virtual line-in driven by the phone, not a queue the Sonos owns.
+
+The start automation is **deliberately unconditional**. An earlier version
+refused to take a Sonos that was already playing, on the theory that it would
+interrupt something. That was wrong: a signal above −40 dB on this stream can
+only mean someone put a record on, and dropping the needle *is* the choice. The
+stop automation's guard is a different thing entirely and must stay — silence
+from the turntable says nothing about what is playing now.
+
 ## Loose ends
 
 - The Icecast source password is stored in plaintext in `/etc/darkice.cfg`, which
