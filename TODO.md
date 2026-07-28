@@ -3,10 +3,48 @@
 ## Button map
 - Confirm which entity actually moves for the bathroom Nest Mini when playback
   starts — Google Assistant voice drives the Cast entity, Music Assistant drives
-  `media_player.bathroom_speaker`. Pads 45/46/47 now use the latter.
+  `media_player.bathroom_speaker`. Pads 55/56/57 use the latter.
 - Pads 51-54 are held for a `climate.` entity: `midea_ac_lan` is installed but
   currently exposes none.
 - See `docs/button-map-proposal.md` for the full analysis.
+
+## Move Spotify from the Sonos to the Nest Mini
+Pads 47 and 48 are free next to the vinyl pair and are the intended home for
+this. Blocked on a decision, not on code.
+
+The Nest Mini is **not a Spotify Connect device**. A scan of the LAN found a
+Connect endpoint on the Sonos (`:1400/spotifyzc`) and nothing at all on the Nest
+— it only speaks Google Cast. Spotify on a Nest is a *Cast receiver app*, and
+the speaker becomes a Connect target only once that app has been launched on it.
+
+Consequences:
+- The core `spotify` integration cannot do it. `media_player.select_source` looks
+  the device up in `GET /me/player/devices`, where the Nest does not appear until
+  it is already playing — and the lookup fails **silently**, so the script would
+  report success and do nothing. (The Sonos never appears in that list at all,
+  [open since 2017](https://github.com/spotify/web-api/issues/525).)
+- `cast` + `media_player.play_media` with a `spotify:` URI does not work either:
+  pychromecast's Spotify controller was removed in 9.3.0.
+- `google_assistant_sdk` is documented as not supporting media playback.
+
+What works is the Cast `addUser` handshake that launches the Spotify app on the
+device first. Two integrations implement it, both HACS custom repositories:
+- **`Mincka/spotcast`** — recommended. Successor to `fondberg/spotcast`, which
+  its author discontinued on 2026-07-11. Its `transfer_playback` explicitly
+  rebuilds `progress_ms`, context, track offset, shuffle and repeat, so the
+  handover keeps the exact position.
+- **SpotifyPlus** — larger surface, more actively released, but needs a token
+  file generated on a desktop and hand-copied into `.storage/`, and its
+  maintainer describes position transfer as "erratic".
+
+Costs either way: a Spotify developer app (Premium is required to own one as of
+February 2026) and re-authentication roughly every 6 months since refresh tokens
+started expiring in July 2026.
+
+Unresolved: whether `GET /me/player` reports track and position for the Sonos
+virtual-line-in session at all. If not, only "start Spotify on the Nest" is
+possible and "move what is playing" is not. Installing the core `spotify`
+integration answers this in two minutes.
 
 ## Small features worth having
 - A `status.<entity>` mapping form: press does nothing, the LED reflects state.
