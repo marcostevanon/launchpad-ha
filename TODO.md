@@ -81,6 +81,8 @@ integration answers this in two minutes.
 - The Icecast mount now falls back to looping silence, so a source blip no
   longer ends playback permanently
 - Latency ~8s to ~6s, which is the floor for this architecture
+- Starts itself when the needle drops and stops after the record ends,
+  without hijacking the Sonos when it is playing something else
 - See `docs/vinyl-streaming.md`
 
 ## TV

@@ -101,10 +101,51 @@ Getting below this means removing hops: a Sonos Era 100 plus the USB-C line-in
 adapter (~€234) is 75 ms, but it is a Sonos-only answer — MA cannot redistribute
 a Sonos line-in, it is a player-local source rather than an ingestible one.
 
+## Starting by itself when the needle drops
+
+Because the mount now falls back to looping silence, the stream is *always* up
+while the Pi has power — which means its audio level alone says whether a record
+is playing. Measured on the live stream:
+
+| | mean | peak |
+|---|---|---|
+| Record playing | −18.4 dB | −3.4 dB |
+| Turntable idle | −78.8 dB | −65.2 dB |
+
+Sixty decibels apart, so the threshold is not a delicate choice. In
+`configuration.yaml`:
+
+```yaml
+binary_sensor:
+  - platform: ffmpeg_noise
+    name: Vinyl Signal
+    input: -reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 30 -i http://192.168.0.101:8000/stream
+    peak: -40
+    duration: 2
+    reset: 20
+```
+
+The reconnect flags matter: without them ffmpeg exits for good the first time the
+power strip is pulled. **Do not set `initial_state: false`** — it does not mean
+"assume off", it means *do not start the ffmpeg process at all*, and the entity
+then sits `unavailable` forever (`FFmpegBase.available` is `ffmpeg.is_running`).
+
+Two automations drive it, and both guards exist for a reason:
+
+- **Play** fires 5 s after signal appears, but **only if the Sonos is not already
+  playing**. Thirty days of history show it busy with AirPlay or Spotify most of
+  the time; without that guard, touching the turntable would cut off whatever
+  was on.
+- **Stop** fires after 5 minutes of silence, but **only while
+  `media_player.sonos_bookshelf` still reports `media_content_id:
+  library://radio/1`** — the Music Assistant library id for the Vinyl Player
+  radio. If playback has moved on to something else, it leaves it alone instead
+  of stopping someone's music. Five minutes is long enough to change sides.
+
+A smart plug cannot do this job: a turntable motor draws 1–2 W, below the
+P110's reliable resolution, and the plug also feeds the Pi and the amplifier.
+
 ## Loose ends
 
 - The Icecast source password is stored in plaintext in `/etc/darkice.cfg`, which
   is world-readable, and repeated in `icecast.xml`.
-- No automatic start when a record is put on. The usual approach is HA's
-  `ffmpeg_noise` binary sensor on the capture device. A smart plug cannot do it:
-  a turntable motor draws 1–2 W, below reliable resolution.
