@@ -25,7 +25,8 @@ BUTTON_MAP: dict[int, str] = {
     78: "disco_toggle",
     # media -- rows 6, 5 and 4, one device per row: play/pause, volume, volume.
     # Kept contiguous under the scenes so there is no gap in the middle of the
-    # board; a row briefly held the living room TV and was removed.
+    # board; a row briefly held the living room TV and was removed, since the
+    # only thing worth having from it was the power-off now on pad 58.
     65: "media_player.living_room_sonos",
     66: "volume_down.media_player.living_room_sonos",
     67: "volume_up.media_player.living_room_sonos",
@@ -35,6 +36,12 @@ BUTTON_MAP: dict[int, str] = {
     55: "media_player.bathroom_speaker",
     56: "volume_down.media_player.bathroom_speaker",
     57: "volume_up.media_player.bathroom_speaker",
+    # Powers the actual TV off, which no media_player entity here can do:
+    # `media_player.living_room_tv` is the Chromecast, and the cast
+    # integration's turn_off is only quit_app(). The script routes through
+    # google_assistant_sdk so Google tells the dongle to emit an HDMI-CEC
+    # standby -- the same path as saying it out loud. See docs/tv-power-off.md.
+    58: "script.tv_off",
     45: "script.vinyl_play_on_sonos",
     46: "script.vinyl_stop",
     # plants
