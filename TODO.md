@@ -75,6 +75,12 @@ integration answers this in two minutes.
 
 # Completed
 
+## TV
+- Pad 58 powers the television off through `google_assistant_sdk`, which is
+  the only route that reaches it: the cast integration's turn_off is just
+  quit_app(), and the Hisense answers nothing locally. See
+  `docs/tv-power-off.md`.
+
 ## Software restart
 - Button chord (15 then 16) restarts the service, now within a 2s window
 

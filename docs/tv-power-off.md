@@ -64,6 +64,24 @@ and formal verification only matters for distributing an app to other people.
 Do not name the Google Cloud app after a domain you do not own, or publishing
 can be refused.
 
+### If the script fails instantly with "Failed to communicate with Google Assistant"
+
+A sub-second failure is a refusal, not a timeout. Home Assistant collapses every
+gRPC failure into that one sentence; the real status is only in the log, where
+step 1 not being done looks like this:
+
+```
+StatusCode.PERMISSION_DENIED
+"Google Assistant API has not been used in project <n> before or it is disabled."
+```
+
+The Assistant API is per-project and is not enabled by creating credentials.
+Enable it, then wait a couple of minutes for it to propagate.
+
+Home Assistant's REST log endpoint was removed, so this traceback is only
+reachable over the websocket API (`system_log/list`) or in the UI under
+Settings → System → Logs. It is also lost on restart.
+
 ## The script
 
 The entity ID must be exactly `script.tv_off`, which is what
