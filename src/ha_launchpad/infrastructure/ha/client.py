@@ -34,6 +34,34 @@ class HomeAssistantUnauthorized(Exception):
     """The token was rejected. No amount of retrying will fix it."""
 
 
+def media_player_is_actionable(state_data: dict[str, Any]) -> bool:
+    """Whether pressing this player's pad can achieve anything at all.
+
+    `media_play_pause` operates on media that is already loaded. The Music
+    Assistant integration does not implement `async_media_play_pause`, so Home
+    Assistant's base class turns any press on a player that is not *playing*
+    into a plain `media_play` -- and a player with an empty queue answers that
+    with a MusicAssistantError, which the integration re-raises as a
+    HomeAssistantError and the REST API returns as a bare 500.
+
+    So a bathroom speaker sitting idle with nothing queued cannot be played,
+    paused, or woken. Rather than firing a call that can only fail, report
+    that up front and let the pad show it.
+    """
+    state = state_data.get("state")
+    attributes = state_data.get("attributes") or {}
+
+    if state in ("playing", "paused", "buffering"):
+        return True
+
+    if state == "off":
+        # A TV can usually be woken; a speaker usually cannot.
+        return bool(attributes.get("supported_features", 0) & MEDIA_PLAYER_TURN_ON)
+
+    # idle, standby, on: only resumable if something is actually loaded.
+    return bool(attributes.get("media_content_id") or attributes.get("media_title"))
+
+
 class HomeAssistantClient:
     def __init__(self, url: str, token: str):
         self.url = url.rstrip("/")
@@ -218,14 +246,16 @@ class HomeAssistantClient:
             logger.debug("Media player %s is unavailable - nothing to do", entity_id)
             return True
 
-        if state == "off":
-            features = state_data.get("attributes", {}).get("supported_features", 0)
-            if features & MEDIA_PLAYER_TURN_ON:
-                return self.call_service("media_player", "turn_on", entity_id)
+        if not media_player_is_actionable(state_data or {}):
             logger.debug(
-                "Media player %s is off and cannot be turned on remotely", entity_id
+                "Media player %s is %s with nothing loaded - not calling",
+                entity_id,
+                state,
             )
             return True
+
+        if state == "off":
+            return self.call_service("media_player", "turn_on", entity_id)
 
         return self.call_service("media_player", "media_play_pause", entity_id)
 

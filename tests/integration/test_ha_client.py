@@ -160,6 +160,63 @@ def test_media_player_that_is_off_without_turn_on_does_nothing(ha_client):
         assert all("services" not in r.path for r in m.request_history)
 
 
+def test_idle_player_with_an_empty_queue_is_not_called(ha_client):
+    """The exact shape of media_player.bathroom_speaker on 2026-07-28 09:10.
+
+    Music Assistant has no async_media_play_pause, so Home Assistant's base
+    class turns a press on an idle player into media_play, and an empty queue
+    answers with an error that came back as a bare HTTP 500.
+    """
+    with requests_mock.Mocker() as m:
+        m.get(
+            "http://test.local/api/states/media_player.bathroom_speaker",
+            json={
+                "state": "idle",
+                "attributes": {
+                    "supported_features": 8320575,
+                    "volume_level": 0.19,
+                    "source": "Music Assistant Queue",
+                },
+            },
+        )
+
+        assert ha_client.toggle_entity("media_player.bathroom_speaker")
+        assert all("services" not in r.path for r in m.request_history)
+
+
+def test_idle_player_with_media_loaded_still_resumes(ha_client):
+    with requests_mock.Mocker() as m:
+        m.get(
+            "http://test.local/api/states/media_player.speaker",
+            json={
+                "state": "idle",
+                "attributes": {"media_content_id": "spotify:track:x"},
+            },
+        )
+        m.post(
+            "http://test.local/api/services/media_player/media_play_pause",
+            status_code=200,
+        )
+
+        assert ha_client.toggle_entity("media_player.speaker")
+        assert m.request_history[-1].path.endswith("/media_play_pause")
+
+
+def test_paused_player_is_always_resumable(ha_client):
+    with requests_mock.Mocker() as m:
+        m.get(
+            "http://test.local/api/states/media_player.speaker",
+            json={"state": "paused", "attributes": {}},
+        )
+        m.post(
+            "http://test.local/api/services/media_player/media_play_pause",
+            status_code=200,
+        )
+
+        assert ha_client.toggle_entity("media_player.speaker")
+        assert m.request_history[-1].path.endswith("/media_play_pause")
+
+
 def test_active_media_player_toggles_play_pause(ha_client):
     with requests_mock.Mocker() as m:
         m.get(

@@ -162,6 +162,40 @@ def test_a_missing_entity_recovers_once_it_appears(led_manager):
     assert not led_manager.is_unavailable(81)
 
 
+def test_idle_player_with_an_empty_queue_greys_out():
+    """It looked identical to a paused player, so it invited a press that
+    could only come back as an HTTP 500."""
+    disco = MagicMock()
+    disco.active = False
+    lm = LEDManager(MagicMock(), MagicMock(), {55: "media_player.speaker"}, disco)
+    lm.ha_client.get_all_states.return_value = [
+        {
+            "entity_id": "media_player.speaker",
+            "state": "idle",
+            "attributes": {"volume_level": 0.19, "source": "Music Assistant Queue"},
+        }
+    ]
+
+    changes, _ = lm.update_all(dry_run=False)
+
+    assert changes == [(55, "gray_1", 0)]
+    assert lm.is_unavailable(55)
+
+
+def test_paused_player_stays_lit():
+    disco = MagicMock()
+    disco.active = False
+    lm = LEDManager(MagicMock(), MagicMock(), {55: "media_player.speaker"}, disco)
+    lm.ha_client.get_all_states.return_value = [
+        {"entity_id": "media_player.speaker", "state": "paused", "attributes": {}}
+    ]
+
+    changes, _ = lm.update_all(dry_run=False)
+
+    assert changes == [(55, "amber_1", 0)]
+    assert not lm.is_unavailable(55)
+
+
 def test_volume_pad_greys_out_when_its_player_is_unavailable():
     disco = MagicMock()
     disco.active = False

@@ -4,7 +4,10 @@ from typing import Any
 
 from ha_launchpad.config.settings import DISCO_LIGHTS
 from ha_launchpad.features.disco import DiscoMode
-from ha_launchpad.infrastructure.ha.client import HomeAssistantClient
+from ha_launchpad.infrastructure.ha.client import (
+    HomeAssistantClient,
+    media_player_is_actionable,
+)
 from ha_launchpad.infrastructure.midi.interface import MidiBackend
 
 logger = logging.getLogger(__name__)
@@ -175,8 +178,11 @@ class LEDManager:
         if domain == "media_player":
             if state == "playing":
                 return "cyan_0", 2
-            if state == "paused":
-                return "amber_1", 0
+            # An idle speaker with an empty queue cannot be played or paused,
+            # so it belongs with the unreachable pads rather than looking
+            # exactly like one that is merely paused.
+            if not media_player_is_actionable(state_data):
+                return UNAVAILABLE_COLOR, 0
             return "amber_1", 0
 
         if domain == "plant":
