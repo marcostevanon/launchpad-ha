@@ -118,6 +118,50 @@ def test_unavailable_is_not_rendered_as_off():
     assert changes == [(81, "gray_1", 0)]
 
 
+def test_an_entity_that_does_not_exist_is_treated_as_unavailable(led_manager):
+    """A pad mapped to something Home Assistant has never heard of used to
+    glow red and still fire service calls. It cannot control anything, so it
+    belongs in the same bucket as an unreachable device."""
+    led_manager.ha_client.get_all_states.return_value = [
+        {"entity_id": "light.something_else", "state": "on", "attributes": {}}
+    ]
+
+    changes, _ = led_manager.update_all(dry_run=False)
+
+    assert changes == [(81, "gray_1", 0)]
+    assert led_manager.is_unavailable(81)
+
+
+def test_a_missing_entity_is_reported_once_not_every_poll(led_manager, caplog):
+    led_manager.ha_client.get_all_states.return_value = [
+        {"entity_id": "light.something_else", "state": "on", "attributes": {}}
+    ]
+
+    with caplog.at_level("WARNING"):
+        for _ in range(5):
+            led_manager.update_all(dry_run=False)
+
+    warnings = [r for r in caplog.records if "does not exist" in r.message]
+    assert len(warnings) == 1
+
+
+def test_a_missing_entity_recovers_once_it_appears(led_manager):
+    """Creating the script in Home Assistant must light its pad without a
+    restart of the controller."""
+    led_manager.ha_client.get_all_states.return_value = [
+        {"entity_id": "light.something_else", "state": "on", "attributes": {}}
+    ]
+    led_manager.update_all(dry_run=False)
+
+    led_manager.ha_client.get_all_states.return_value = [
+        {"entity_id": "light.a", "state": "on", "attributes": {"brightness": 255}}
+    ]
+    changes, _ = led_manager.update_all(dry_run=False)
+
+    assert changes == [(81, "green_1", 0)]
+    assert not led_manager.is_unavailable(81)
+
+
 def test_volume_pad_greys_out_when_its_player_is_unavailable():
     disco = MagicMock()
     disco.active = False

@@ -32,6 +32,7 @@ class LEDManager:
         self.button_map = button_map
         self.disco = disco_mode
         self._unknown_entities: set[str] = set()
+        self._missing_entities: set[str] = set()
         self._last_state: dict[int, str] = {}
         self._warned_no_states = False
         # Pads whose entity could not be reached at the last poll. Pressing one
@@ -140,8 +141,17 @@ class LEDManager:
         # Standard entities
         state_data = state_map.get(entity_id)
         if not state_data:
-            return "red_2", 0  # Default/Unknown
+            # Home Assistant has no such entity: a typo in the map, or
+            # something not created yet. Either way the pad cannot control
+            # anything, which is the same situation as an unreachable device --
+            # so render it that way and let the controller keep it inert,
+            # rather than lighting a red pad that fires calls into the void.
+            if entity_id not in self._missing_entities:
+                logger.warning("Entity does not exist in Home Assistant: %s", entity_id)
+                self._missing_entities.add(entity_id)
+            return UNAVAILABLE_COLOR, 0
 
+        self._missing_entities.discard(entity_id)
         state = state_data.get("state", "unknown")
         domain = entity_id.split(".")[0]
 
