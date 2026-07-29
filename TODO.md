@@ -58,6 +58,23 @@ integration answers this in two minutes.
 - Send a notification to Telegram when an error is produced
 
 ## Bigger ideas
+- **Stop polling. Subscribe.** Every poll is `GET /api/states`, which returns
+  **all 329 entities, 159 KB, 44 ms**, to drive 30 pads that reference **28
+  entities**. At `POLL_INTERVAL` 1.5s that is 6.4 MB/min awake, and at
+  `IDLE_POLL_INTERVAL` 10s another 954 KB/min asleep: roughly **2.7 GB a day**.
+  It costs no bandwidth that matters (the mini and the HA VM are both wired, and
+  the VM is bridged on the mini itself, so none of it touches WiFi) but it does
+  mean Home Assistant serialises 329 entities to JSON forty times a minute on a
+  VM already short of CPU.
+
+  The websocket `subscribe_entities` command with an entity filter fixes all of
+  it at once: Home Assistant pushes only the mapped entities and only when they
+  change. Cuts the traffic by ~99%, removes the up-to-1.5s lag so pads react the
+  instant a scene fires, and makes the awake/asleep interval distinction mostly
+  moot because there is no polling left to slow down. Touches `client.py` and
+  `led_manager.update_all`, and needs a reconnect/backoff path that the current
+  stateless polling gets for free. Raising the intervals instead would be the
+  wrong fix: still 329 entities fetched to read 28, just less often.
 - Hold-for-volume overlay, reusing the brightness picker interaction. Absolute
   instead of relative, one gesture instead of seven presses, and it collapses
   each three-pad media row into one.
