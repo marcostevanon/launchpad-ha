@@ -150,10 +150,12 @@ class LaunchpadController:
         if force:
             self.led_manager.invalidate_cache()
 
-        changes, has_notif = self.led_manager.update_all(dry_run=dry_run)
+        # The bool is redundant now that the pads themselves are reported:
+        # notification_pads carries both which and what colour.
+        changes, _ = self.led_manager.update_all(dry_run=dry_run)
 
         if is_idle:
-            self.idle_manager.set_notification_status(has_notif)
+            self.idle_manager.sync_notification_pads(self.led_manager.notification_pads)
             self.idle_manager.expire_standby_preview()
 
             # Something changed elsewhere in the house. Show it on the sleeping

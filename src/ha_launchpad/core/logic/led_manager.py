@@ -39,6 +39,9 @@ class LEDManager:
         self._missing_entities: set[str] = set()
         self._last_state: dict[int, str] = {}
         self._warned_no_states = False
+        # Pads reporting a problem, as (note, colour, channel). Kept even on a
+        # dry run so the sleeping board can hold them lit.
+        self._notification_pads: list[tuple[int, str, int]] = []
         # Pads whose entity could not be reached at the last poll. Pressing one
         # cannot achieve anything, so the controller refuses to act on it.
         self._unavailable_notes: set[int] = set()
@@ -55,6 +58,7 @@ class LEDManager:
         """
         changes = []
         has_notifications = False
+        notification_pads = []
         current_state = {}
 
         # Fetch all states in one call
@@ -95,6 +99,9 @@ class LEDManager:
             if channel == 2 and "plant." in entity_id:
                 # Plant problem is reported on the pulsing channel
                 has_notifications = True
+                # Recorded per pad, not just as a flag: a sleeping board keeps
+                # these lit, so it needs to know which ones and in what colour.
+                notification_pads.append((note, color, channel))
 
             # Create a simple representation of state: "color:channel"
             state_key = f"{color}:{channel}"
@@ -112,7 +119,17 @@ class LEDManager:
         if not dry_run:
             self._last_state = current_state
 
+        self._notification_pads = notification_pads
         return changes, has_notifications
+
+    @property
+    def notification_pads(self) -> list[tuple[int, str, int]]:
+        """Pads currently reporting a problem, as (note, colour, channel).
+
+        Populated on every update_all, dry run included, because the sleeping
+        board relies on it precisely when nothing is being painted normally.
+        """
+        return list(self._notification_pads)
 
     def _dependency_is_up(self, note: int, state_map: dict[str, Any]) -> bool:
         """Whether the thing this pad quietly depends on is actually there.

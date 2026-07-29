@@ -116,17 +116,73 @@ def test_standby_preview_leaves_the_wake_button_alone(idle_manager):
     idle_manager.backend.send_note.assert_not_called()
 
 
-def test_notification_visuals(idle_manager):
+def test_wake_button_has_one_colour_whatever_is_happening(idle_manager):
+    """It used to turn orange on any notification, which told you something was
+    wrong without telling you what. The pads carry that now."""
     idle_manager.backend.is_connected.return_value = True
 
-    # Enter sleep - No notification -> Lightblue
     idle_manager.enter_idle()
-    idle_manager.backend.send_note.assert_any_call(IDLE_MODE_BUTTON_ID, "lightblue_0")
+    idle_manager.backend.send_note.assert_any_call(IDLE_MODE_BUTTON_ID, "white")
 
-    # Set notification -> Orange
-    idle_manager.set_notification_status(True)
-    idle_manager.backend.send_note.assert_any_call(IDLE_MODE_BUTTON_ID, "orange_1")
+    idle_manager.backend.send_note.reset_mock()
+    idle_manager.sync_notification_pads([(81, "red_2", 2)])
 
-    # Clear notification -> Lightblue
-    idle_manager.set_notification_status(False)
-    idle_manager.backend.send_note.assert_any_call(IDLE_MODE_BUTTON_ID, "lightblue_0")
+    wake_calls = [
+        c
+        for c in idle_manager.backend.send_note.call_args_list
+        if c.args and c.args[0] == IDLE_MODE_BUTTON_ID
+    ]
+    assert wake_calls == []
+
+
+def test_notification_pads_stay_lit_through_sleep(idle_manager):
+    idle_manager.backend.is_connected.return_value = True
+    idle_manager.enter_idle()
+    idle_manager.backend.send_note.reset_mock()
+
+    idle_manager.sync_notification_pads([(81, "red_2", 2)])
+    idle_manager.backend.send_note.assert_called_once_with(81, "red_2", 2)
+
+    # Already lit and unchanged: do not repaint it on every poll.
+    idle_manager.backend.send_note.reset_mock()
+    idle_manager.sync_notification_pads([(81, "red_2", 2)])
+    idle_manager.backend.send_note.assert_not_called()
+
+    # Problem resolved: the pad goes dark again.
+    idle_manager.sync_notification_pads([])
+    idle_manager.backend.send_note.assert_called_once_with(81, "off")
+
+
+def test_notification_pad_survives_the_standby_preview_timer(idle_manager):
+    """A pad that is previewing and then starts notifying must not be switched
+    off when the preview window closes."""
+    from ha_launchpad.config.settings import STANDBY_PREVIEW_DURATION
+
+    idle_manager.backend.is_connected.return_value = True
+
+    with patch("time.time") as mock_time:
+        mock_time.return_value = 0
+        idle_manager.show_standby_preview([(81, "green_1", 0)])
+        idle_manager.sync_notification_pads([(81, "red_2", 2)])
+
+        mock_time.return_value = STANDBY_PREVIEW_DURATION + 1
+        idle_manager.backend.send_note.reset_mock()
+        idle_manager.expire_standby_preview()
+        idle_manager.backend.send_note.assert_not_called()
+
+
+def test_standby_preview_does_not_repaint_a_notification_pad(idle_manager):
+    idle_manager.backend.is_connected.return_value = True
+    idle_manager.sync_notification_pads([(81, "red_2", 2)])
+    idle_manager.backend.send_note.reset_mock()
+
+    idle_manager.show_standby_preview([(81, "green_1", 0)])
+    idle_manager.backend.send_note.assert_not_called()
+
+
+def test_sync_ignores_the_wake_button(idle_manager):
+    idle_manager.backend.is_connected.return_value = True
+    idle_manager.backend.send_note.reset_mock()
+
+    idle_manager.sync_notification_pads([(IDLE_MODE_BUTTON_ID, "red_2", 2)])
+    idle_manager.backend.send_note.assert_not_called()
