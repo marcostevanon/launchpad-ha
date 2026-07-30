@@ -4,6 +4,11 @@
 - Confirm which entity actually moves for the bathroom Nest Mini when playback
   starts. Google Assistant voice drives the Cast entity, Music Assistant drives
   `media_player.bathroom_speaker`. Pads 55/56/57 use the latter.
+- **Pad 62 is dead.** `light.bedroom_lamp` has been `unavailable` since
+  2026-07-30, and its Yeelight config entry retries forever against
+  192.168.0.14. The lamp has changed IP or died. The pad renders grey and
+  refuses to fire, which is the intended behaviour, but it is still a pad
+  that does nothing.
 
 ## Move Spotify from the Sonos to the Nest Mini
 Pads 45 to 48 are the intended home for this, and the whole run is free now
