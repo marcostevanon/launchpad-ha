@@ -10,6 +10,37 @@
 Pads 47 and 48 are free next to the vinyl pair and are the intended home for
 this. Blocked on a decision, not on code.
 
+### Try Sendspin bridges first
+Found 2026-07-29 and it changes the shape of the problem, so read this before
+the HACS research below. Music Assistant **2.8** introduced **Sendspin
+Bridges**, which wrap the Sendspin protocol around existing Chromecast and
+AirPlay devices so they can sit in one synchronised group. That answers the
+larger want directly: one name in the Spotify picker and one in the AirPlay
+picker, both playing on the Sonos and the Nest Mini in sync.
+
+```
+Music Assistant     2.9.9, up to date      bridges available since 2.8
+sendspin players    none                   never configured
+Sonos               media_player.living_room_sonos      (AirPlay side)
+Nest Mini           media_player.nestmini7849           (Cast side)
+```
+
+Sequence: enable the Sendspin provider, create a bridge for each of the two
+devices, build a Sync Group containing both, then add the Spotify Connect
+provider and the AirPlay Receiver provider **for that group player**, because
+both are configured per player rather than globally.
+
+Known risks, and they are not small. Both plugins are `"stage": "alpha"`,
+Sendspin itself is Technical Preview and 16 bit only, transport commands lag
+0.5 to 5 s for Spotify Connect and about 5 s for the AirPlay receiver, and the
+Cast half is the fragile one: the docs say AirPlay to Sendspin bridges should
+always work while Cast bridging "is not guaranteed to work due to device
+firmware limitations". Costs nothing to try, and the Nest is the device most
+likely to refuse.
+
+If it does refuse, everything below still applies.
+
+### The HACS route, if Sendspin does not work
 The Nest Mini is **not a Spotify Connect device**. A scan of the LAN found a
 Connect endpoint on the Sonos (`:1400/spotifyzc`) and nothing at all on the Nest,
 which only speaks Google Cast. Spotify on a Nest is a *Cast receiver app*, and
