@@ -45,8 +45,6 @@ BUTTON_MAP: dict[int, str] = {
     # google_assistant_sdk so Google tells the dongle to emit an HDMI-CEC
     # standby -- the same path as saying it out loud. See docs/tv-power-off.md.
     58: "script.tv_off",
-    45: "script.vinyl_play_on_sonos",
-    46: "script.vinyl_stop",
     # plants
     17: "plant.monstera",
     18: "plant.pothos",
@@ -66,17 +64,12 @@ ALL_PADS: tuple[int, ...] = tuple(
 
 # Pads that quietly depend on something other than the entity they point at.
 #
-# The vinyl pads call a Home Assistant script, and a script exists whether or
-# not it can do anything -- so they looked perfectly live while the Raspberry
-# Pi that produces the stream sat unplugged, and pressing one could only fail.
-# The Pi lives on a switched power strip that is off most of the time, so this
-# is the normal case rather than a fault.
-#
 # Each value names an entity that has to be `on` for the pad to mean anything.
-PAD_AVAILABILITY: dict[int, str] = {
-    45: "binary_sensor.vinyl_pi",
-    46: "binary_sensor.vinyl_pi",
-}
+# Empty at the moment: the vinyl pads were the only ones that needed it, and
+# they are gone because the turntable now drives itself from its own power
+# draw. Keep the mechanism, it earns its place the moment another pad calls a
+# script whose target can be absent.
+PAD_AVAILABILITY: dict[int, str] = {}
 
 # Special Buttons
 IDLE_MODE_BUTTON_ID = 68

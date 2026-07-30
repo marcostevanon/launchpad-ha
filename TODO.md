@@ -4,11 +4,10 @@
 - Confirm which entity actually moves for the bathroom Nest Mini when playback
   starts. Google Assistant voice drives the Cast entity, Music Assistant drives
   `media_player.bathroom_speaker`. Pads 55/56/57 use the latter.
-- See `docs/button-map-proposal.md` for the full analysis.
 
 ## Move Spotify from the Sonos to the Nest Mini
-Pads 47 and 48 are free next to the vinyl pair and are the intended home for
-this. Blocked on a decision, not on code.
+Pads 45 to 48 are the intended home for this, and the whole run is free now
+that the two vinyl pads have gone. Blocked on a decision, not on code.
 
 ### Try Sendspin bridges first
 Found 2026-07-29 and it changes the shape of the problem, so read this before
@@ -122,14 +121,16 @@ integration answers this in two minutes.
 # Completed
 
 ## Vinyl
-- Pad 74 powers the rig; 45 and 46 stay grey until the Raspberry Pi answers a
-  ping, because the Pi lives on a switched strip and is off most of the time
-- The Icecast mount now falls back to looping silence, so a source blip no
-  longer ends playback permanently
+- Pad 74 powers the rig, and it is the only vinyl pad left: the start and stop
+  pads went away when the turntable learned to drive itself
+- The turntable starts and stops the Sonos from its own power draw, measured at
+  0.27 W between a spinning platter and a stopped one, with the threshold at
+  5.25 W. The audio detector it replaced was wrong in both directions
+- The Icecast mount falls back to looping silence, so a source blip no longer
+  ends playback permanently
 - Latency ~8s to ~6s, which is the floor for this architecture
-- Starts itself when the needle drops and stops after the record ends,
-  without hijacking the Sonos when it is playing something else
-- See `docs/vinyl-streaming.md`
+- See `docs/vinyl-streaming.md` and
+  `home-ops/services/home-assistant/vinyl.md`
 
 ## TV
 - Pad 58 powers the television off through `google_assistant_sdk`, which is
@@ -162,9 +163,10 @@ integration answers this in two minutes.
 
 ## Button map
 - Reclaimed pads 55/56/57 from `media_player.studio_speaker`, unavailable since
-  2026-07-22 and without VOLUME_SET, for the living room TV
-- Pad 58 controls the Sonos TV autoplay switch
-- Pads 45/46/47 moved to `media_player.bathroom_speaker`
+  2026-07-22 and without VOLUME_SET, and they now hold
+  `media_player.bathroom_speaker`
+- Pad 58 powers the television off, see the TV section above
+- The living room Sonos sits on 65/66/67, kept contiguous under the scenes
 - `unavailable` renders as dim grey rather than looking identical to off
 - Media players that advertise TURN_ON can be powered on from their pad
 

@@ -134,8 +134,8 @@ class LEDManager:
     def _dependency_is_up(self, note: int, state_map: dict[str, Any]) -> bool:
         """Whether the thing this pad quietly depends on is actually there.
 
-        See PAD_AVAILABILITY: the vinyl pads call a script, and a script
-        exists whether or not the Raspberry Pi behind it has power.
+        See PAD_AVAILABILITY. A pad pointing at a script always looks live,
+        because a script exists whether or not the thing it drives is there.
         """
         gate = PAD_AVAILABILITY.get(note)
         if gate is None:

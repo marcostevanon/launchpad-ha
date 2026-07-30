@@ -162,25 +162,26 @@ def test_a_missing_entity_recovers_once_it_appears(led_manager):
     assert not led_manager.is_unavailable(81)
 
 
-def _vinyl_manager():
+def _gated_manager():
+    """A pad pointing at a script, which is the case the gate exists for.
+
+    A script entity is present whether or not the machine it drives has power,
+    so the pad looks live no matter what and pressing it can only fail.
+    """
     disco = MagicMock()
     disco.active = False
-    return LEDManager(
-        MagicMock(), MagicMock(), {45: "script.vinyl_play_on_sonos"}, disco
-    )
+    return LEDManager(MagicMock(), MagicMock(), {45: "script.do_a_thing"}, disco)
 
 
 def test_pad_greys_out_when_the_thing_behind_it_is_powered_off(monkeypatch):
-    """The vinyl script always exists, so its pad looked live even with the
-    Raspberry Pi that produces the stream unplugged."""
     monkeypatch.setattr(
         "ha_launchpad.core.logic.led_manager.PAD_AVAILABILITY",
-        {45: "binary_sensor.vinyl_pi"},
+        {45: "binary_sensor.the_machine"},
     )
-    lm = _vinyl_manager()
+    lm = _gated_manager()
     lm.ha_client.get_all_states.return_value = [
-        {"entity_id": "script.vinyl_play_on_sonos", "state": "off", "attributes": {}},
-        {"entity_id": "binary_sensor.vinyl_pi", "state": "off", "attributes": {}},
+        {"entity_id": "script.do_a_thing", "state": "off", "attributes": {}},
+        {"entity_id": "binary_sensor.the_machine", "state": "off", "attributes": {}},
     ]
 
     changes, _ = lm.update_all(dry_run=False)
@@ -192,12 +193,12 @@ def test_pad_greys_out_when_the_thing_behind_it_is_powered_off(monkeypatch):
 def test_pad_lights_normally_once_the_dependency_is_up(monkeypatch):
     monkeypatch.setattr(
         "ha_launchpad.core.logic.led_manager.PAD_AVAILABILITY",
-        {45: "binary_sensor.vinyl_pi"},
+        {45: "binary_sensor.the_machine"},
     )
-    lm = _vinyl_manager()
+    lm = _gated_manager()
     lm.ha_client.get_all_states.return_value = [
-        {"entity_id": "script.vinyl_play_on_sonos", "state": "off", "attributes": {}},
-        {"entity_id": "binary_sensor.vinyl_pi", "state": "on", "attributes": {}},
+        {"entity_id": "script.do_a_thing", "state": "off", "attributes": {}},
+        {"entity_id": "binary_sensor.the_machine", "state": "on", "attributes": {}},
     ]
 
     changes, _ = lm.update_all(dry_run=False)
@@ -212,9 +213,9 @@ def test_a_missing_gate_entity_closes_the_pad(monkeypatch):
         "ha_launchpad.core.logic.led_manager.PAD_AVAILABILITY",
         {45: "binary_sensor.typo"},
     )
-    lm = _vinyl_manager()
+    lm = _gated_manager()
     lm.ha_client.get_all_states.return_value = [
-        {"entity_id": "script.vinyl_play_on_sonos", "state": "off", "attributes": {}}
+        {"entity_id": "script.do_a_thing", "state": "off", "attributes": {}}
     ]
 
     changes, _ = lm.update_all(dry_run=False)
@@ -225,7 +226,7 @@ def test_a_missing_gate_entity_closes_the_pad(monkeypatch):
 def test_pads_without_a_gate_are_untouched(monkeypatch):
     monkeypatch.setattr(
         "ha_launchpad.core.logic.led_manager.PAD_AVAILABILITY",
-        {45: "binary_sensor.vinyl_pi"},
+        {45: "binary_sensor.the_machine"},
     )
     disco = MagicMock()
     disco.active = False

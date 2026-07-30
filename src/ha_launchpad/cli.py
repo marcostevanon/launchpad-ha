@@ -106,7 +106,6 @@ def main() -> None:
         time.sleep(delay)
 
     backend = MidoBackend()
-    # backend = MockBackend()
     controller = LaunchpadController(ha_client, BUTTON_MAP, backend=backend)
     controller.run()
 
