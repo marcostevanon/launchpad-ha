@@ -62,6 +62,28 @@ ALL_PADS: tuple[int, ...] = tuple(
     row * 10 + col for row in range(1, 9) for col in range(1, 9)
 )
 
+# The buttons around the grid, from the Programmer mode layout on page 10 of
+# the Mini MK3 Programmer's Reference.
+#
+# These are Control Changes, not notes: the grid sends note on/off, everything
+# around it sends CC. Lighting them accepts either message type, but the app
+# only ever writes CC to them so the two directions stay symmetrical.
+#
+# The top row is silkscreened, left to right:
+#   91 up   92 down   93 left   94 right   95 Session   96 Drums   97 Keys   98 User
+FUNCTION_ROW_CC: tuple[int, ...] = (91, 92, 93, 94, 95, 96, 97, 98)
+# The scene launch buttons down the right-hand edge, top to bottom.
+SCENE_COLUMN_CC: tuple[int, ...] = (89, 79, 69, 59, 49, 39, 29, 19)
+LOGO_CC = 99
+
+ARROW_UP_CC = 91
+ARROW_DOWN_CC = 92
+
+# Opens and closes the colour lab. "User" is the far end of the top row, as far
+# from the arrows as the case allows, and nothing else in this project has ever
+# used it.
+COLOR_LAB_BUTTON_CC = 98
+
 # Pads that quietly depend on something other than the entity they point at.
 #
 # Each value names an entity that has to be `on` for the pad to mean anything.

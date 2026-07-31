@@ -7,6 +7,7 @@ A utility that connects a Novation Launchpad to Home Assistant. Button presses t
 - Bidirectional control: Launchpad buttons control Home Assistant entities, and entity states update Launchpad LEDs
 - Configurable button mapping to any Home Assistant entity (lights, switches, scenes, scripts, media players, plants)
 - Colour picker and brightness picker, entered by holding a light's pad
+- Colour lab: the device's whole 128-colour palette on the board, logging what you press, so pad colours are chosen on the hardware instead of off a screen — see [`docs/colour-lab.md`](docs/colour-lab.md)
 - Disco mode for automated light shows on configured spotlights
 - Standby mode: the board sleeps after inactivity, and changes made elsewhere in the house light the affected pads for a couple of minutes without waking it
 - Launchpad rotation support (0°, 90°, 180°, 270°)

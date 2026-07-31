@@ -10,6 +10,7 @@ from pathlib import Path
 from ha_launchpad.config.mapping import (
     ALL_PADS,
     BRIGHTNESS_ENABLED,
+    COLOR_LAB_BUTTON_CC,
     COLOR_PICK_ENABLED,
 )
 from ha_launchpad.config.settings import (
@@ -29,6 +30,7 @@ from ha_launchpad.core.logic.input_handler import InputHandler
 
 # New Logic Components
 from ha_launchpad.core.logic.led_manager import UNAVAILABLE_COLOR, LEDManager
+from ha_launchpad.features.color_lab import ColorLab
 from ha_launchpad.features.color_picker import ColorPicker
 from ha_launchpad.features.disco import DiscoMode
 from ha_launchpad.infrastructure.ha.client import (
@@ -61,6 +63,7 @@ class LaunchpadController:
         # Features
         self.disco = DiscoMode(ha_client)
         self.color_picker = ColorPicker(ha_client, self.backend)
+        self.color_lab = ColorLab(self.backend, LAUNCHPAD_ROTATION)
 
         # Core Logic Modules
         self.led_manager = LEDManager(ha_client, self.backend, button_map, self.disco)
@@ -141,6 +144,12 @@ class LaunchpadController:
         if self.color_picker.active:
             return
 
+        # The colour lab has painted every pad on the board, most of them with
+        # colours no entity asked for. Repainting underneath it would erase the
+        # palette one pad at a time.
+        if self.color_lab.active:
+            return
+
         is_idle = self.idle_manager.is_idle
 
         # Update logic: If idle, we dry_run to check for changes without lighting up
@@ -200,7 +209,11 @@ class LaunchpadController:
         while self.running:
             self._write_heartbeat()
             try:
-                self.idle_manager.check_status()  # Check for idle timeout
+                # An open colour lab holds the board awake. Falling asleep
+                # underneath it would blank the palette mid-comparison, and
+                # the only way back would be through a board showing nothing.
+                if not self.color_lab.active:
+                    self.idle_manager.check_status()  # Check for idle timeout
                 self.update_led_states()
             except HomeAssistantUnauthorized as exc:
                 # Retrying cannot help, and hammering a rejected token risks
@@ -273,6 +286,12 @@ class LaunchpadController:
         """Handle MIDI note-on (button press)."""
         logger.debug("DEBUG: _handle_note_on received note: %s", note)
 
+        # 0. Colour lab: it owns the whole grid while open, and no press there
+        #    is allowed to reach Home Assistant.
+        if self.color_lab.active:
+            self.color_lab.handle_note(note)
+            return
+
         # 0. Idle Check: If idle, bypass all feature logic and delegate to main handler
         #    This prevents Color Picker/Brightness modes from activating during sleep.
         if self.idle_manager.is_idle:
@@ -326,6 +345,11 @@ class LaunchpadController:
 
     def _handle_note_off(self, note: int):
         """Handle MIDI note-off (button release)."""
+        # The lab acted on the press already, and a swatch has nothing to do
+        # on release.
+        if self.color_lab.active:
+            return
+
         if note in self._unavailable_presses:
             self._unavailable_presses.discard(note)
             # Put back exactly what the LED manager believes is there, so its
@@ -362,12 +386,49 @@ class LaunchpadController:
         except Exception:
             logger.debug("handle_button_press failed", exc_info=True)
 
+    def _handle_control_change(self, control: int):
+        """Handle a button from around the grid.
+
+        Everything outside the 8x8 sends Control Change rather than note on:
+        the top row, the right-hand column and the logo. Until the colour lab
+        these were all dead, and any that still are stay dead here.
+        """
+        if control == COLOR_LAB_BUTTON_CC:
+            self._toggle_color_lab()
+            return
+
+        if self.color_lab.active:
+            self.color_lab.handle_cc(control)
+
+    def _toggle_color_lab(self):
+        if self.color_lab.active:
+            self.color_lab.exit()
+            # The lab lit all 64 pads, including the ones no entity owns, so
+            # the LED manager has no way to put those back on its own.
+            self.led_manager.invalidate_cache()
+            self.clear_all_leds()
+            self.update_led_states(force=True)
+            return
+
+        # Opening from standby wakes the board first. Leaving it nominally
+        # asleep would have the next poll paint a sleeping board over the
+        # palette, and the wake button is one of the 64 swatches.
+        self.idle_manager.register_activity()
+        self.color_lab.enter()
+
     def handle_midi_message(self, msg):
         """Process a single MIDI message."""
         if msg is None:
             return
 
         mtype = getattr(msg, "type", None)
+
+        if mtype == "control_change":
+            # The buttons around the grid send 127 on press and 0 on release.
+            if getattr(msg, "value", 0) > 0:
+                self._handle_control_change(msg.control)
+            return
+
         velocity = getattr(msg, "velocity", 0)
         note = getattr(msg, "note", None)
 
@@ -486,6 +547,9 @@ class LaunchpadController:
         finally:
             self.running = False
             self.disco.stop()
+            # Blanks the page buttons and the logo, which clear_all_leds does
+            # not reach: it only knows about the 8x8.
+            self.color_lab.exit()
             self.clear_all_leds()
             self.close_backend()
             logger.info("Cleanup complete. Goodbye!")

@@ -16,3 +16,18 @@ def rotate_pad(pad: int, rotation: int) -> int:
 
 def inverse_rotation(rotation: int) -> int:
     return (360 - rotation) % 360
+
+
+def reading_order(buttons: tuple[int, ...], rotation: int) -> tuple[int, ...]:
+    """Reorder the buttons around the grid to match what the user sees.
+
+    Unlike the pads, these cannot be rotated: they are fixed positions on the
+    case, and there is no bottom row or left column for them to land on. Turn
+    the board 180 degrees and the top row is along the bottom edge, still the
+    same eight buttons, but now running right to left. All that can be fixed is
+    the order they are read in, which is what this does.
+
+    At 90 and 270 the row and the column swap edges outright, so "left to
+    right" stops meaning anything and the hardware order is returned unchanged.
+    """
+    return tuple(reversed(buttons)) if rotation == 180 else buttons

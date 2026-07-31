@@ -53,6 +53,17 @@ class RotatedBackend(MidiBackend):
         physical_note = rotate_pad(note, self._inv_rotation)
         self._backend.send_note(physical_note, color, channel)
 
+    def send_velocity(self, note: int, velocity: int, channel: int = 0) -> None:
+        physical_note = rotate_pad(note, self._inv_rotation)
+        self._backend.send_velocity(physical_note, velocity, channel)
+
+    def send_cc(self, control: int, velocity: int, channel: int = 0) -> None:
+        # Deliberately not rotated. The buttons around the grid are physical
+        # positions on the case, not squares in an 8x8 that can be turned; there
+        # is no bottom row or left column for them to rotate onto. Callers that
+        # care about which one the user sees first pick the order themselves.
+        self._backend.send_cc(control, velocity, channel)
+
     def iter_incoming(self) -> Any | None:
         source = self._backend.iter_incoming()
         if source is None:

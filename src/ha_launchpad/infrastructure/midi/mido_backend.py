@@ -71,20 +71,40 @@ class MidoBackend(MidiBackend):
         return False
 
     def send_note(self, note: int, color: str, channel: int = 0):
+        self.send_velocity(note, COLORS.get(color, 0), channel)
+
+    def send_velocity(self, note: int, velocity: int, channel: int = 0):
         if not self.midi_out:
-            logger.debug("send_note: output not open (note=%s color=%s)", note, color)
+            logger.debug(
+                "send_velocity: output not open (note=%s velocity=%s)", note, velocity
+            )
             return
         if not 0 <= note <= 127:
             # Not a valid MIDI data byte; nothing on the device answers to it.
-            logger.debug("send_note: skipping out-of-range note %s", note)
+            logger.debug("send_velocity: skipping out-of-range note %s", note)
             return
         try:
-            velocity = COLORS.get(color, 0)
             msg = mido.Message("note_on", note=note, velocity=velocity, channel=channel)
             self.midi_out.send(msg)
             logger.debug("Sent note (off)=%s channel=%s", note, channel)
         except Exception as exc:
             logger.warning("Failed to send note=%s: %s", note, exc)
+
+    def send_cc(self, control: int, velocity: int, channel: int = 0):
+        if not self.midi_out:
+            logger.debug("send_cc: output not open (cc=%s value=%s)", control, velocity)
+            return
+        if not 0 <= control <= 127:
+            logger.debug("send_cc: skipping out-of-range control %s", control)
+            return
+        try:
+            msg = mido.Message(
+                "control_change", control=control, value=velocity, channel=channel
+            )
+            self.midi_out.send(msg)
+            logger.debug("Sent cc=%s value=%s channel=%s", control, velocity, channel)
+        except Exception as exc:
+            logger.warning("Failed to send cc=%s: %s", control, exc)
 
     def iter_incoming(self):
         # Return the input object which supports iteration over incoming messages.
