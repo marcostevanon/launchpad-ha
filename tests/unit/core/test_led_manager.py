@@ -2,7 +2,13 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from ha_launchpad.core.logic.led_manager import LEDManager
+from ha_launchpad.config.mapping import COLORS
+from ha_launchpad.config.palette import PALETTE_HEX
+from ha_launchpad.core.logic.led_manager import (
+    OFF_COLOR,
+    UNAVAILABLE_COLOR,
+    LEDManager,
+)
 
 
 @pytest.fixture
@@ -115,7 +121,7 @@ def test_unavailable_is_not_rendered_as_off():
 
     changes, _ = lm.update_all(dry_run=False)
 
-    assert changes == [(81, "gray_1", 0)]
+    assert changes == [(81, UNAVAILABLE_COLOR, 0)]
 
 
 def test_an_entity_that_does_not_exist_is_treated_as_unavailable(led_manager):
@@ -128,7 +134,7 @@ def test_an_entity_that_does_not_exist_is_treated_as_unavailable(led_manager):
 
     changes, _ = led_manager.update_all(dry_run=False)
 
-    assert changes == [(81, "gray_1", 0)]
+    assert changes == [(81, UNAVAILABLE_COLOR, 0)]
     assert led_manager.is_unavailable(81)
 
 
@@ -186,7 +192,7 @@ def test_pad_greys_out_when_the_thing_behind_it_is_powered_off(monkeypatch):
 
     changes, _ = lm.update_all(dry_run=False)
 
-    assert changes == [(45, "gray_1", 0)]
+    assert changes == [(45, UNAVAILABLE_COLOR, 0)]
     assert lm.is_unavailable(45)
 
 
@@ -203,7 +209,7 @@ def test_pad_lights_normally_once_the_dependency_is_up(monkeypatch):
 
     changes, _ = lm.update_all(dry_run=False)
 
-    assert changes == [(45, "purple_1", 0)]
+    assert changes == [(45, "sage", 0)]
     assert not lm.is_unavailable(45)
 
 
@@ -220,7 +226,7 @@ def test_a_missing_gate_entity_closes_the_pad(monkeypatch):
 
     changes, _ = lm.update_all(dry_run=False)
 
-    assert changes == [(45, "gray_1", 0)]
+    assert changes == [(45, UNAVAILABLE_COLOR, 0)]
 
 
 def test_pads_without_a_gate_are_untouched(monkeypatch):
@@ -256,7 +262,7 @@ def test_idle_player_with_an_empty_queue_greys_out():
 
     changes, _ = lm.update_all(dry_run=False)
 
-    assert changes == [(55, "gray_1", 0)]
+    assert changes == [(55, UNAVAILABLE_COLOR, 0)]
     assert lm.is_unavailable(55)
 
 
@@ -270,7 +276,7 @@ def test_paused_player_stays_lit():
 
     changes, _ = lm.update_all(dry_run=False)
 
-    assert changes == [(55, "amber_1", 0)]
+    assert changes == [(55, OFF_COLOR, 0)]
     assert not lm.is_unavailable(55)
 
 
@@ -284,7 +290,7 @@ def test_volume_pad_greys_out_when_its_player_is_unavailable():
 
     changes, _ = lm.update_all(dry_run=False)
 
-    assert changes == [(66, "gray_1", 0)]
+    assert changes == [(66, UNAVAILABLE_COLOR, 0)]
 
 
 def test_volume_pad_greys_out_when_the_player_reports_no_level():
@@ -300,7 +306,7 @@ def test_volume_pad_greys_out_when_the_player_reports_no_level():
 
     changes, _ = lm.update_all(dry_run=False)
 
-    assert changes == [(56, "gray_1", 0)]
+    assert changes == [(56, UNAVAILABLE_COLOR, 0)]
 
 
 def test_volume_pad_is_active_when_a_level_is_reported():
@@ -364,3 +370,15 @@ def test_healthy_plant_reports_no_notification_pads(plant_manager):
 
     assert not has_notifications
     assert plant_manager.notification_pads == []
+
+
+def test_unreachable_is_dimmer_than_merely_switched_off():
+    """The rule both colours were chosen under, on the hardware. An unreachable
+    device is a passive fact: it must never outshine one that is simply off,
+    which is what happened the last time these were picked off a screen."""
+
+    def luminance(name):
+        r, g, b = bytes.fromhex(PALETTE_HEX[COLORS[name]][1:])
+        return 0.2126 * r + 0.7152 * g + 0.0722 * b
+
+    assert luminance(UNAVAILABLE_COLOR) < luminance(OFF_COLOR)

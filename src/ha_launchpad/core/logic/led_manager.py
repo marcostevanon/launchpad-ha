@@ -17,10 +17,18 @@ logger = logging.getLogger(__name__)
 # opposed to "it is switched off". Wi-Fi bulbs killed at a wall switch report
 # `unavailable`, and rendering that as plain off hides the difference.
 UNAVAILABLE_STATES = frozenset({"unavailable", "unknown"})
-# The dimmest grey the device offers. An unreachable device is a passive fact,
-# so its pad must sit *below* the "switched off" colour in brightness -- gray_2
-# renders as a mid white and made offline bulbs the loudest thing on the board.
-UNAVAILABLE_COLOR = "gray_1"
+# A device that is merely switched off. Most of the board sits at this colour
+# most of the time, which is why it was worth choosing on the hardware: the
+# velocity it replaced read as slate blue on screen and as a dull smudge in the
+# room.
+OFF_COLOR = "gray_3"
+
+# An unreachable device is a passive fact, so its pad has to sit *below* the
+# switched-off colour in brightness. A mid white here made offline bulbs the
+# loudest thing on the board. This brown-mauve is dimmer than OFF_COLOR and,
+# unlike the grey it replaced, is not another shade of the same thing: off and
+# unreachable now differ in hue as well as brightness.
+UNAVAILABLE_COLOR = "taupe"
 
 
 class LEDManager:
@@ -209,13 +217,16 @@ class LEDManager:
                 if domain == "light" and "attributes" in state_data:
                     return self._get_dimmed_color(state_data["attributes"]), 0
                 return "green_1", 0
-            return "amber_1", 0
+            return OFF_COLOR, 0
 
         if domain == "scene":
             return "blue_1", 0
 
         if domain == "script":
-            return "purple_1", 0
+            # Chosen on the hardware for pad 58, which is the only script on
+            # the board. A script has no state worth showing -- it is a button,
+            # not a thing that is on or off -- so this colour never changes.
+            return "sage", 0
 
         if domain == "media_player":
             if state == "playing":
@@ -225,7 +236,7 @@ class LEDManager:
             # exactly like one that is merely paused.
             if not media_player_is_actionable(state_data):
                 return UNAVAILABLE_COLOR, 0
-            return "amber_1", 0
+            return OFF_COLOR, 0
 
         if domain == "plant":
             problem = state_data.get("attributes", {}).get("problem", "unknown")

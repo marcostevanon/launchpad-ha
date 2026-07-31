@@ -5,6 +5,7 @@ from unittest.mock import MagicMock
 import pytest
 
 from ha_launchpad.core.controller import LaunchpadController
+from ha_launchpad.core.logic.led_manager import UNAVAILABLE_COLOR
 
 
 @pytest.fixture(autouse=True)
@@ -78,4 +79,4 @@ def test_releasing_an_unavailable_pad_restores_its_colour(controller):
     controller.backend.send_note.reset_mock()
     controller._handle_note_off(81)
 
-    controller.backend.send_note.assert_called_once_with(81, "gray_1")
+    controller.backend.send_note.assert_called_once_with(81, UNAVAILABLE_COLOR)

@@ -184,6 +184,13 @@ COLORS: dict[str, int] = {
     # twice and the later pair silently won.
     "orange_2": 60,
     "orange_3": 61,
-    # extra
-    "amber_1": 112,
+    # From the second half of the palette, which is otherwise unnamed. All three
+    # were chosen on the hardware in the colour lab, not off a screen.
+    #
+    # `taupe` is a muted brown-mauve, and the printed table gives `gray_3` the
+    # same #B3B3B3 as `gray_1`. They are still different palette entries, and
+    # the number is what identifies a colour here, not the hex.
+    "taupe": 71,
+    "sage": 102,  # the TV pad
+    "gray_3": 117,
 }
