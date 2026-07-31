@@ -14,28 +14,23 @@ manual can be held side by side and compared cell for cell.
 
 import logging
 
-from ha_launchpad.config.mapping import FUNCTION_ROW_CC, LOGO_CC
+from ha_launchpad.config.mapping import (
+    ARROW_DOWN_CC,
+    ARROW_UP_CC,
+    COLOR_LAB_BUTTON_CC,
+    LOGO_CC,
+)
 from ha_launchpad.config.palette import PALETTE_SIZE, describe
 from ha_launchpad.infrastructure.midi.interface import MidiBackend
-from ha_launchpad.utils.rotate_pad import reading_order
 
 logger = logging.getLogger(__name__)
 
 PAGE_SIZE = 64  # one full 8x8 grid
 PAGE_COUNT = PALETTE_SIZE // PAGE_SIZE
 
-# Where the lab's controls sit in the row of round buttons, counted from the
-# left as the user sees it. All of it lives in that one corner: the way out,
-# then one button per page, immediately beside it. Splitting them across two
-# edges of the case meant looking in two places to do one thing.
-TOGGLE_POSITION = 0
-FIRST_PAGE_POSITION = 1
-
 # Velocities used by the lab's own furniture rather than as samples.
 OFF = 0
-DIM_WHITE = 1  # a page that exists but is not the one being shown
-WHITE = 3  # the page being shown
-RED = 5  # the way out, and the only one of the three that is not a page
+WHITE = 3
 
 
 def pad_for_index(index: int) -> int:
@@ -58,12 +53,13 @@ class ColorLab:
         self.active = False
         self.page = 0
 
-        # Positions, not part numbers. Turn the board 180 degrees and the row
-        # is still the same eight buttons, but the one at the user's left end
-        # is the one the case calls the right end.
-        row = reading_order(FUNCTION_ROW_CC, rotation)
-        self.toggle_button = row[TOGGLE_POSITION]
-        self._page_buttons = row[FIRST_PAGE_POSITION : FIRST_PAGE_POSITION + PAGE_COUNT]
+        self.toggle_button = COLOR_LAB_BUTTON_CC
+
+        # Follow the arrow the user can see, not the one that was printed: at
+        # 180 the button silkscreened with an up arrow is pointing down.
+        flipped = rotation == 180
+        self._previous_page_button = ARROW_DOWN_CC if flipped else ARROW_UP_CC
+        self._next_page_button = ARROW_UP_CC if flipped else ARROW_DOWN_CC
 
     def enter(self) -> None:
         """Open the lab on page 1 and paint the palette."""
@@ -72,7 +68,7 @@ class ColorLab:
         logger.info(
             "Colour lab open: %d colours across %d pages", PALETTE_SIZE, PAGE_COUNT
         )
-        self.backend.send_cc(self.toggle_button, RED)
+        self.backend.send_cc(self.toggle_button, WHITE)
         self._paint()
 
     def exit(self) -> None:
@@ -88,7 +84,12 @@ class ColorLab:
         self.active = False
         logger.info("Colour lab closed")
 
-        for cc in (self.toggle_button, LOGO_CC, *self._page_buttons):
+        for cc in (
+            self.toggle_button,
+            LOGO_CC,
+            self._previous_page_button,
+            self._next_page_button,
+        ):
             try:
                 self.backend.send_cc(cc, OFF)
             except Exception:
@@ -140,8 +141,10 @@ class ColorLab:
         if not self.active:
             return False
 
-        if control in self._page_buttons:
-            self.show_page(self._page_buttons.index(control))
+        if control == self._previous_page_button:
+            self.show_page(self.page - 1)
+        elif control == self._next_page_button:
+            self.show_page(self.page + 1)
 
         # Everything else around the grid is inert while the lab is open,
         # rather than falling through to whatever it would normally do.
@@ -157,5 +160,11 @@ class ColorLab:
             # the palette telling the truth about itself, not a missing swatch.
             self.backend.send_velocity(pad, first + index)
 
-        for position, cc in enumerate(self._page_buttons):
-            self.backend.send_cc(cc, WHITE if position == self.page else DIM_WHITE)
+        # An arrow lights only when it leads somewhere. On two pages that also
+        # says which one is open, without a second row of buttons to say it.
+        self.backend.send_cc(
+            self._previous_page_button, WHITE if self.page > 0 else OFF
+        )
+        self.backend.send_cc(
+            self._next_page_button, WHITE if self.page < PAGE_COUNT - 1 else OFF
+        )

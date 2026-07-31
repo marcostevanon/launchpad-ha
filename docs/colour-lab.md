@@ -15,27 +15,25 @@ log, paste them into `COLORS`.
 
 ## Opening it
 
-Every control is in the **corner of the round buttons nearest the user's left**,
-in a row of three:
+Press **User**. It lights white while the lab is open; press it again to close,
+and the board repaints itself from Home Assistant.
+
+Paging is on the **two arrows** at the other end of the same row of round
+buttons. At `LAUNCHPAD_ROTATION=180` that row runs along the bottom edge, User
+sits at the bottom **left**, and the arrows at the bottom **right**:
 
 ```
-[ red = close ] [ page 1 ] [ page 2 ]   · · · · ·
+◆  [User]  ·  ·  ·  ·  ·  [▲]  [▼]
 ```
 
-Press the red one to close. The board repaints itself from Home Assistant.
-
-> Which physical buttons those are depends on the rotation, because these are
-> fixed positions on the case rather than squares in a grid that can be turned.
-> At `LAUNCHPAD_ROTATION=180` the row of round buttons runs along the **bottom**
-> edge and reads right to left, so the cluster is at the bottom left and lands
-> on **User, Keys, Drums** — CC 98, 97, 96. Upright it would be the top left:
-> up, down, left — CC 91, 92, 93. The code holds the *position*, and works out
-> the button.
+> The arrows are followed as the *user* sees them, not as the case printed
+> them. Turned 180 degrees the button silkscreened with an up arrow is pointing
+> down, so at that rotation ▲ is CC 92 and ▼ is CC 91.
 >
-> An earlier version had the pages on the right-hand column and the paging on
-> the arrow keys, which at 180 put them on the opposite edge and the opposite
-> corner from the button that opens the lab. Two places to look to do one
-> thing.
+> User is picked by name rather than by position for one reason: paging owns
+> the arrows, and a button chosen as "the far left of the row" lands *on* an
+> arrow at some rotation. The controller tests the lab button first, so that
+> collision would silently cost you paging altogether.
 
 ## The layout
 
@@ -47,11 +45,12 @@ there are exactly two pages, and there will never be a third.
 | **Grid** | 64 swatches, filled top left first, then along the row |
 | **Page 1** | velocities 0–63 |
 | **Page 2** | velocities 64–127 |
-| **Page buttons** | bright white is the page you are on, dim white is the other one |
+| **Arrows** | an arrow is lit only when there is a page that way |
 | **Logo** | the colour you last pressed |
 
-The side column and the five remaining round buttons stay dark. With two pages
-there is nothing for them to do.
+The lit arrow is also the page indicator. On two pages, "only ▼ is lit" says
+you are on the first one as well as a second row of buttons could, and the
+side column stays dark rather than carrying eight lights for two states.
 
 The fill order is the reading order of the palette table on page 11 of the
 [Programmer's Reference](#where-the-numbers-came-from), so the board and the

@@ -5,6 +5,8 @@ import pytest
 
 from ha_launchpad.config.mapping import (
     ALL_PADS,
+    ARROW_DOWN_CC,
+    ARROW_UP_CC,
     COLORS,
     FUNCTION_ROW_CC,
     LOGO_CC,
@@ -96,39 +98,56 @@ def test_the_second_page_shows_the_rest(lab):
     assert velocities_sent(lab.backend) == list(zip(PAGE_PADS, range(64, 128)))
 
 
-def test_a_page_button_jumps_straight_to_its_page(lab):
+def test_the_arrows_page_through_and_stop_at_the_ends(lab):
     lab.enter()
 
-    lab.handle_cc(lab._page_buttons[1])
+    lab.handle_cc(lab._previous_page_button)  # already on the first page
+    assert lab.page == 0
+
+    lab.handle_cc(lab._next_page_button)
     assert lab.page == 1
 
-    lab.handle_cc(lab._page_buttons[0])
+    lab.handle_cc(lab._next_page_button)  # no third page to fall into
+    assert lab.page == 1
+
+    lab.handle_cc(lab._previous_page_button)
     assert lab.page == 0
 
 
-def test_the_page_buttons_show_which_one_is_open(lab):
+def test_an_arrow_lights_only_when_it_leads_somewhere(lab):
+    """With two pages, that is also how the board says which one is open."""
     lab.enter()
-    sent = cc_sent(lab.backend)
+    on_first = cc_sent(lab.backend)
+    assert on_first[lab._previous_page_button] == 0
+    assert on_first[lab._next_page_button] > 0
 
-    assert sent[lab._page_buttons[0]] > sent[lab._page_buttons[1]] > 0
+    lab.backend.reset_mock()
+    lab.show_page(1)
+    on_last = cc_sent(lab.backend)
+    assert on_last[lab._previous_page_button] > 0
+    assert on_last[lab._next_page_button] == 0
 
 
-def test_the_controls_sit_together_next_to_the_way_out(lab):
-    """One corner, one cluster: exit, then a button per page beside it."""
-    assert lab.toggle_button == FUNCTION_ROW_CC[0]
-    assert lab._page_buttons == FUNCTION_ROW_CC[1:3]
-    assert len(lab._page_buttons) == PAGE_COUNT
+def test_the_way_out_is_never_also_an_arrow():
+    """Paging owns the arrows, so the button that closes the lab has to be a
+    named one. Chosen by position it would land on an arrow at some rotation,
+    and the controller checks it first: paging would stop working entirely."""
+    for rotation in (0, 90, 180, 270):
+        lab = ColorLab(MagicMock(), rotation=rotation)
+        assert lab.toggle_button not in (ARROW_UP_CC, ARROW_DOWN_CC)
+        assert lab.toggle_button in FUNCTION_ROW_CC
 
 
-def test_at_180_the_cluster_follows_the_user_to_the_other_end_of_the_row():
-    """Upside down, the corner the user calls left is the case's right end."""
+def test_at_180_the_arrows_follow_what_the_user_sees():
+    """Upside down, the button printed with an up arrow points down, and
+    reaching page 1 by pressing something that looks like "down" is nonsense."""
     flipped = ColorLab(MagicMock(), rotation=180)
-
-    assert flipped.toggle_button == FUNCTION_ROW_CC[-1]
-    assert flipped._page_buttons == FUNCTION_ROW_CC[-2:-4:-1]
-
     flipped.enter()
-    flipped.handle_cc(flipped._page_buttons[1])
+
+    assert flipped._previous_page_button == ARROW_DOWN_CC
+    assert flipped._next_page_button == ARROW_UP_CC
+
+    flipped.handle_cc(ARROW_UP_CC)  # the arrow the user sees pointing down
     assert flipped.page == 1
 
 
@@ -196,7 +215,8 @@ def test_closing_blanks_everything_the_grid_repaint_cannot_reach(lab):
     cleared = cc_sent(lab.backend)
     assert cleared[lab.toggle_button] == 0
     assert cleared[LOGO_CC] == 0
-    assert all(cleared[cc] == 0 for cc in lab._page_buttons)
+    assert cleared[lab._previous_page_button] == 0
+    assert cleared[lab._next_page_button] == 0
 
 
 def test_closing_an_already_closed_lab_touches_nothing(lab):
