@@ -10,7 +10,6 @@ from pathlib import Path
 from ha_launchpad.config.mapping import (
     ALL_PADS,
     BRIGHTNESS_ENABLED,
-    COLOR_LAB_BUTTON_CC,
     COLOR_PICK_ENABLED,
 )
 from ha_launchpad.config.settings import (
@@ -393,7 +392,9 @@ class LaunchpadController:
         the top row, the right-hand column and the logo. Until the colour lab
         these were all dead, and any that still are stay dead here.
         """
-        if control == COLOR_LAB_BUTTON_CC:
+        # Which button that is depends on the rotation, so the lab owns the
+        # answer rather than the controller holding a copy of it.
+        if control == self.color_lab.toggle_button:
             self._toggle_color_lab()
             return
 

@@ -76,14 +76,6 @@ FUNCTION_ROW_CC: tuple[int, ...] = (91, 92, 93, 94, 95, 96, 97, 98)
 SCENE_COLUMN_CC: tuple[int, ...] = (89, 79, 69, 59, 49, 39, 29, 19)
 LOGO_CC = 99
 
-ARROW_UP_CC = 91
-ARROW_DOWN_CC = 92
-
-# Opens and closes the colour lab. "User" is the far end of the top row, as far
-# from the arrows as the case allows, and nothing else in this project has ever
-# used it.
-COLOR_LAB_BUTTON_CC = 98
-
 # Pads that quietly depend on something other than the entity they point at.
 #
 # Each value names an entity that has to be `on` for the pad to mean anything.

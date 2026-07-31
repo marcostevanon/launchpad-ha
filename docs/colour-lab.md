@@ -15,18 +15,27 @@ log, paste them into `COLORS`.
 
 ## Opening it
 
-Press **User**, the last button of the top row. It was dead before this, and so
-were the other fifteen buttons around the grid.
+Every control is in the **corner of the round buttons nearest the user's left**,
+in a row of three:
 
-Press it again to close. The board repaints itself from Home Assistant.
+```
+[ red = close ] [ page 1 ] [ page 2 ]   · · · · ·
+```
 
-> With `LAUNCHPAD_ROTATION=180` the top row runs along the **bottom** edge and
-> reads right to left, so User is the button at the far **bottom left**. The
-> right-hand column is on the left. Nothing about that can be fixed in
-> software: these are fixed positions on the case, not squares in a grid that
-> can be turned. What the code does fix is the order they are read in, so the
-> first page still sits at the top of the column and the arrow that *looks* like
-> it points up still goes to page 1.
+Press the red one to close. The board repaints itself from Home Assistant.
+
+> Which physical buttons those are depends on the rotation, because these are
+> fixed positions on the case rather than squares in a grid that can be turned.
+> At `LAUNCHPAD_ROTATION=180` the row of round buttons runs along the **bottom**
+> edge and reads right to left, so the cluster is at the bottom left and lands
+> on **User, Keys, Drums** — CC 98, 97, 96. Upright it would be the top left:
+> up, down, left — CC 91, 92, 93. The code holds the *position*, and works out
+> the button.
+>
+> An earlier version had the pages on the right-hand column and the paging on
+> the arrow keys, which at 180 put them on the opposite edge and the opposite
+> corner from the button that opens the lab. Two places to look to do one
+> thing.
 
 ## The layout
 
@@ -38,9 +47,11 @@ there are exactly two pages, and there will never be a third.
 | **Grid** | 64 swatches, filled top left first, then along the row |
 | **Page 1** | velocities 0–63 |
 | **Page 2** | velocities 64–127 |
-| **Side column** | one button per page: bright is the page you are on, dim is a page that exists, dark is nothing |
-| **Up / down arrows** | previous and next page |
+| **Page buttons** | bright white is the page you are on, dim white is the other one |
 | **Logo** | the colour you last pressed |
+
+The side column and the five remaining round buttons stay dark. With two pages
+there is nothing for them to do.
 
 The fill order is the reading order of the palette table on page 11 of the
 [Programmer's Reference](#where-the-numbers-came-from), so the board and the

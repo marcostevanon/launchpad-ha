@@ -5,10 +5,8 @@ import pytest
 
 from ha_launchpad.config.mapping import (
     ALL_PADS,
-    ARROW_DOWN_CC,
-    ARROW_UP_CC,
-    COLOR_LAB_BUTTON_CC,
     COLORS,
+    FUNCTION_ROW_CC,
     LOGO_CC,
     SCENE_COLUMN_CC,
 )
@@ -98,55 +96,47 @@ def test_the_second_page_shows_the_rest(lab):
     assert velocities_sent(lab.backend) == list(zip(PAGE_PADS, range(64, 128)))
 
 
-def test_the_arrows_page_through_and_stop_at_the_ends(lab):
+def test_a_page_button_jumps_straight_to_its_page(lab):
     lab.enter()
 
-    lab.handle_cc(ARROW_UP_CC)  # already on the first page
-    assert lab.page == 0
-
-    lab.handle_cc(ARROW_DOWN_CC)
+    lab.handle_cc(lab._page_buttons[1])
     assert lab.page == 1
 
-    lab.handle_cc(ARROW_DOWN_CC)  # no third page to fall into
-    assert lab.page == 1
-
-    lab.handle_cc(ARROW_UP_CC)
+    lab.handle_cc(lab._page_buttons[0])
     assert lab.page == 0
 
 
-def test_a_scene_button_jumps_straight_to_its_page(lab):
-    lab.enter()
-
-    lab.handle_cc(SCENE_COLUMN_CC[1])
-
-    assert lab.page == 1
-
-
-def test_the_column_shows_which_pages_exist_and_which_is_open(lab):
+def test_the_page_buttons_show_which_one_is_open(lab):
     lab.enter()
     sent = cc_sent(lab.backend)
 
-    assert sent[SCENE_COLUMN_CC[0]] > sent[SCENE_COLUMN_CC[1]] > 0
-    # Six buttons for pages that do not exist, and they stay dark.
-    assert all(sent[cc] == 0 for cc in SCENE_COLUMN_CC[PAGE_COUNT:])
+    assert sent[lab._page_buttons[0]] > sent[lab._page_buttons[1]] > 0
 
 
-def test_at_180_the_column_and_the_arrows_follow_what_the_user_sees():
-    """Upside down, the button printed with an up arrow points down, and the
-    top of the column is the button the hardware calls the bottom."""
+def test_the_controls_sit_together_next_to_the_way_out(lab):
+    """One corner, one cluster: exit, then a button per page beside it."""
+    assert lab.toggle_button == FUNCTION_ROW_CC[0]
+    assert lab._page_buttons == FUNCTION_ROW_CC[1:3]
+    assert len(lab._page_buttons) == PAGE_COUNT
+
+
+def test_at_180_the_cluster_follows_the_user_to_the_other_end_of_the_row():
+    """Upside down, the corner the user calls left is the case's right end."""
     flipped = ColorLab(MagicMock(), rotation=180)
+
+    assert flipped.toggle_button == FUNCTION_ROW_CC[-1]
+    assert flipped._page_buttons == FUNCTION_ROW_CC[-2:-4:-1]
+
     flipped.enter()
-
-    flipped.handle_cc(ARROW_UP_CC)
-    assert flipped.page == 1  # the arrow the user sees pointing down
-
-    flipped.handle_cc(ARROW_DOWN_CC)
-    assert flipped.page == 0
-
-    # First page sits on the button at the user's top of the column, which is
-    # the last one in hardware order.
-    flipped.handle_cc(SCENE_COLUMN_CC[-2])
+    flipped.handle_cc(flipped._page_buttons[1])
     assert flipped.page == 1
+
+
+def test_the_side_column_is_left_alone(lab):
+    """It used to carry the page indicator, and nothing does now."""
+    lab.enter()
+
+    assert not set(cc_sent(lab.backend)) & set(SCENE_COLUMN_CC)
 
 
 # --- picking ----------------------------------------------------------------
@@ -184,12 +174,13 @@ def test_presses_are_swallowed_so_nothing_reaches_home_assistant(lab):
     lab.enter()
 
     assert lab.handle_note(PAGE_PADS[0]) is True
+    # A button around the grid that the lab has no use for is still consumed.
     assert lab.handle_cc(SCENE_COLUMN_CC[7]) is True
 
 
 def test_a_closed_lab_claims_nothing(lab):
     assert lab.handle_note(81) is False
-    assert lab.handle_cc(ARROW_UP_CC) is False
+    assert lab.handle_cc(FUNCTION_ROW_CC[1]) is False
 
 
 # --- closing ----------------------------------------------------------------
@@ -203,9 +194,9 @@ def test_closing_blanks_everything_the_grid_repaint_cannot_reach(lab):
 
     assert not lab.active
     cleared = cc_sent(lab.backend)
-    assert cleared[COLOR_LAB_BUTTON_CC] == 0
+    assert cleared[lab.toggle_button] == 0
     assert cleared[LOGO_CC] == 0
-    assert all(cleared[cc] == 0 for cc in SCENE_COLUMN_CC)
+    assert all(cleared[cc] == 0 for cc in lab._page_buttons)
 
 
 def test_closing_an_already_closed_lab_touches_nothing(lab):

@@ -14,13 +14,7 @@ manual can be held side by side and compared cell for cell.
 
 import logging
 
-from ha_launchpad.config.mapping import (
-    ARROW_DOWN_CC,
-    ARROW_UP_CC,
-    COLOR_LAB_BUTTON_CC,
-    LOGO_CC,
-    SCENE_COLUMN_CC,
-)
+from ha_launchpad.config.mapping import FUNCTION_ROW_CC, LOGO_CC
 from ha_launchpad.config.palette import PALETTE_SIZE, describe
 from ha_launchpad.infrastructure.midi.interface import MidiBackend
 from ha_launchpad.utils.rotate_pad import reading_order
@@ -30,10 +24,18 @@ logger = logging.getLogger(__name__)
 PAGE_SIZE = 64  # one full 8x8 grid
 PAGE_COUNT = PALETTE_SIZE // PAGE_SIZE
 
+# Where the lab's controls sit in the row of round buttons, counted from the
+# left as the user sees it. All of it lives in that one corner: the way out,
+# then one button per page, immediately beside it. Splitting them across two
+# edges of the case meant looking in two places to do one thing.
+TOGGLE_POSITION = 0
+FIRST_PAGE_POSITION = 1
+
 # Velocities used by the lab's own furniture rather than as samples.
 OFF = 0
 DIM_WHITE = 1  # a page that exists but is not the one being shown
-WHITE = 3  # the current page, and the button that opens the lab
+WHITE = 3  # the page being shown
+RED = 5  # the way out, and the only one of the three that is not a page
 
 
 def pad_for_index(index: int) -> int:
@@ -56,13 +58,12 @@ class ColorLab:
         self.active = False
         self.page = 0
 
-        self._page_buttons = reading_order(SCENE_COLUMN_CC, rotation)
-        # Follow the arrow the user can see, not the one that was printed. At
-        # 180 the button silkscreened with an up arrow is physically pointing
-        # down, and reaching page 1 by pressing "down" would be nonsense.
-        flipped = rotation == 180
-        self._page_up = ARROW_DOWN_CC if flipped else ARROW_UP_CC
-        self._page_down = ARROW_UP_CC if flipped else ARROW_DOWN_CC
+        # Positions, not part numbers. Turn the board 180 degrees and the row
+        # is still the same eight buttons, but the one at the user's left end
+        # is the one the case calls the right end.
+        row = reading_order(FUNCTION_ROW_CC, rotation)
+        self.toggle_button = row[TOGGLE_POSITION]
+        self._page_buttons = row[FIRST_PAGE_POSITION : FIRST_PAGE_POSITION + PAGE_COUNT]
 
     def enter(self) -> None:
         """Open the lab on page 1 and paint the palette."""
@@ -71,7 +72,7 @@ class ColorLab:
         logger.info(
             "Colour lab open: %d colours across %d pages", PALETTE_SIZE, PAGE_COUNT
         )
-        self.backend.send_cc(COLOR_LAB_BUTTON_CC, WHITE)
+        self.backend.send_cc(self.toggle_button, RED)
         self._paint()
 
     def exit(self) -> None:
@@ -87,7 +88,7 @@ class ColorLab:
         self.active = False
         logger.info("Colour lab closed")
 
-        for cc in (COLOR_LAB_BUTTON_CC, LOGO_CC, *self._page_buttons):
+        for cc in (self.toggle_button, LOGO_CC, *self._page_buttons):
             try:
                 self.backend.send_cc(cc, OFF)
             except Exception:
@@ -139,11 +140,7 @@ class ColorLab:
         if not self.active:
             return False
 
-        if control == self._page_up:
-            self.show_page(self.page - 1)
-        elif control == self._page_down:
-            self.show_page(self.page + 1)
-        elif control in self._page_buttons:
+        if control in self._page_buttons:
             self.show_page(self._page_buttons.index(control))
 
         # Everything else around the grid is inert while the lab is open,
@@ -161,10 +158,4 @@ class ColorLab:
             self.backend.send_velocity(pad, first + index)
 
         for position, cc in enumerate(self._page_buttons):
-            if position == self.page:
-                color = WHITE
-            elif position < PAGE_COUNT:
-                color = DIM_WHITE
-            else:
-                color = OFF
-            self.backend.send_cc(cc, color)
+            self.backend.send_cc(cc, WHITE if position == self.page else DIM_WHITE)

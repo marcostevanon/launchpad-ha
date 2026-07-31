@@ -2,7 +2,7 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from ha_launchpad.config.mapping import COLOR_LAB_BUTTON_CC, SCENE_COLUMN_CC
+from ha_launchpad.config.mapping import SCENE_COLUMN_CC
 from ha_launchpad.core.controller import LaunchpadController
 
 
@@ -22,18 +22,22 @@ def controller():
 
 
 def test_the_user_button_opens_and_closes_the_lab(controller):
-    controller.handle_midi_message(ControlChange(COLOR_LAB_BUTTON_CC))
+    controller.handle_midi_message(ControlChange(controller.color_lab.toggle_button))
     assert controller.color_lab.active
 
-    controller.handle_midi_message(ControlChange(COLOR_LAB_BUTTON_CC))
+    controller.handle_midi_message(ControlChange(controller.color_lab.toggle_button))
     assert not controller.color_lab.active
 
 
 def test_releasing_a_button_is_not_a_second_press(controller):
     """The board sends 127 on press and 0 on release. Acting on both would
     open the lab and close it again before a finger left the button."""
-    controller.handle_midi_message(ControlChange(COLOR_LAB_BUTTON_CC, value=127))
-    controller.handle_midi_message(ControlChange(COLOR_LAB_BUTTON_CC, value=0))
+    controller.handle_midi_message(
+        ControlChange(controller.color_lab.toggle_button, value=127)
+    )
+    controller.handle_midi_message(
+        ControlChange(controller.color_lab.toggle_button, value=0)
+    )
 
     assert controller.color_lab.active
 
@@ -72,7 +76,7 @@ def test_closing_repaints_the_whole_board(controller):
     controller.led_manager.update_all.return_value = ([], False)
     controller.color_lab.enter()
 
-    controller.handle_midi_message(ControlChange(COLOR_LAB_BUTTON_CC))
+    controller.handle_midi_message(ControlChange(controller.color_lab.toggle_button))
 
     controller.led_manager.invalidate_cache.assert_called()
     controller.led_manager.update_all.assert_called()
@@ -81,7 +85,7 @@ def test_closing_repaints_the_whole_board(controller):
 def test_opening_from_standby_wakes_the_board_first(controller):
     controller.idle_manager._is_idle = True
 
-    controller.handle_midi_message(ControlChange(COLOR_LAB_BUTTON_CC))
+    controller.handle_midi_message(ControlChange(controller.color_lab.toggle_button))
 
     assert not controller.idle_manager.is_idle
     assert controller.color_lab.active
