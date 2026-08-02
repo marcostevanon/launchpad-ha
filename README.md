@@ -164,6 +164,13 @@ Set `LOG_LEVEL=DEBUG` for verbose output, or `LOG_FILE=` (empty) to log to stder
 
 The Launchpad is put into Programmer Mode at startup and handed back to Live Mode on shutdown — Programmer Mode disables the device's own Setup menu, so leaving it there would require a power cycle to undo.
 
+## Apple Home
+
+The same entities are reachable from the iPhone through Home Assistant's HomeKit
+Bridge, which is a separate client of Home Assistant and unaffected by anything
+in `src/`. What this project contributes there is the button map itself. See
+[`docs/apple-home.md`](docs/apple-home.md).
+
 ## Future plans
 
 See [`TODO.md`](TODO.md).

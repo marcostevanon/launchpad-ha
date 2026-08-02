@@ -10,6 +10,20 @@
   refuses to fire, which is the intended behaviour, but it is still a pad
   that does nothing.
 
+## Apple Home
+The HomeKit bridge exposes a subset of `BUTTON_MAP` with names that duplicate
+the room and no ordering. Nothing in `src/` affects it — the board and the
+bridge are separate clients of the same Home Assistant — but the button map is
+the right source for the bridge's `filter`. Config block and the Home app steps
+are in [`docs/apple-home.md`](docs/apple-home.md).
+
+- Add the eleven mapped entities the bridge does not publish: `light.bulb_1/2/3`,
+  `switch.vinyl`, `script.tv_off`, and the two media players.
+- Wrap the seven scene switches in native Home scenes so they render as one-tap
+  square tiles. HA already resets them after 10s; what is missing is only the
+  shape, and a bridge cannot publish a scene.
+- The two *No Response* tiles are the same dead bedroom lamps as pad 62.
+
 ## Move Spotify from the Sonos to the Nest Mini
 Pads 45 to 48 are the intended home for this, and the whole run is free now
 that the two vinyl pads have gone. Blocked on a decision, not on code.
