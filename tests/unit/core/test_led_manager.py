@@ -266,6 +266,28 @@ def test_idle_player_with_an_empty_queue_greys_out():
     assert lm.is_unavailable(55)
 
 
+def test_pad_stays_lit_for_a_player_that_queues_on_the_device():
+    """A stopped Sonos publishes no title and no content id while still holding
+    its queue, so greying the pad out refused a press it would have answered."""
+    disco = MagicMock()
+    disco.active = False
+    lm = LEDManager(
+        MagicMock(), MagicMock(), {65: "media_player.living_room_sonos"}, disco
+    )
+    lm.ha_client.get_all_states.return_value = [
+        {
+            "entity_id": "media_player.living_room_sonos",
+            "state": "idle",
+            "attributes": {"volume_level": 0.15},
+        }
+    ]
+
+    changes, _ = lm.update_all(dry_run=False)
+
+    assert changes == [(65, OFF_COLOR, 0)]
+    assert not lm.is_unavailable(65)
+
+
 def test_paused_player_stays_lit():
     disco = MagicMock()
     disco.active = False

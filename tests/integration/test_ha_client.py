@@ -184,6 +184,25 @@ def test_idle_player_with_an_empty_queue_is_not_called(ha_client):
         assert all("services" not in r.path for r in m.request_history)
 
 
+def test_player_with_a_device_side_queue_is_called_even_when_idle(ha_client):
+    """The exact shape of media_player.living_room_sonos on 2026-08-05 16:50,
+    when media_play resumed a 50-track queue at position 2 out of a state that
+    carried no title and no content id at all.
+    """
+    with requests_mock.Mocker() as m:
+        m.get(
+            "http://test.local/api/states/media_player.living_room_sonos",
+            json={"state": "idle", "attributes": {"volume_level": 0.15}},
+        )
+        m.post(
+            "http://test.local/api/services/media_player/media_play_pause",
+            status_code=200,
+        )
+
+        assert ha_client.toggle_entity("media_player.living_room_sonos")
+        assert m.request_history[-1].path.endswith("/media_play_pause")
+
+
 def test_idle_player_with_media_loaded_still_resumes(ha_client):
     with requests_mock.Mocker() as m:
         m.get(

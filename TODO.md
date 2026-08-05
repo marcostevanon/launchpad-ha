@@ -4,7 +4,7 @@
 - Confirm which entity actually moves for the bathroom Nest Mini when playback
   starts. Google Assistant voice drives the Cast entity, Music Assistant drives
   `media_player.bathroom_speaker`. Pads 55/56/57 use the latter.
-- **Pad 62 is dead.** `light.bedroom_lamp` has been `unavailable` since
+- Pad 62 is dead. `light.bedroom_lamp` has been `unavailable` since
   2026-07-30, and its Yeelight config entry retries forever against
   192.168.0.14. The lamp has changed IP or died. The pad renders grey and
   refuses to fire, which is the intended behaviour, but it is still a pad
@@ -62,11 +62,11 @@ Consequences:
 
 What works is the Cast `addUser` handshake that launches the Spotify app on the
 device first. Two integrations implement it, both HACS custom repositories:
-- **`Mincka/spotcast`**, recommended. Successor to `fondberg/spotcast`, which
+- `Mincka/spotcast` is the first to try. Successor to `fondberg/spotcast`, which
   its author discontinued on 2026-07-11. Its `transfer_playback` explicitly
   rebuilds `progress_ms`, context, track offset, shuffle and repeat, so the
   handover keeps the exact position.
-- **SpotifyPlus**, larger surface and more actively released, but needs a token
+- SpotifyPlus has a larger surface and more frequent releases, but needs a token
   file generated on a desktop and hand-copied into `.storage/`, and its
   maintainer describes position transfer as "erratic".
 
@@ -93,7 +93,7 @@ integration answers this in two minutes.
 - Send a notification to Telegram when an error is produced
 
 ## Bigger ideas
-- **Stop polling. Subscribe.** Every poll is `GET /api/states`, which returns
+- Stop polling and subscribe. Every poll is `GET /api/states`, which returns
   **all 329 entities, 159 KB, 44 ms**, to drive 30 pads that reference **28
   entities**. At `POLL_INTERVAL` 1.5s that is 6.4 MB/min awake, and at
   `IDLE_POLL_INTERVAL` 10s another 954 KB/min asleep: roughly **2.7 GB a day**.
@@ -136,6 +136,19 @@ integration answers this in two minutes.
 - Latency ~8s to ~6s, which is the floor for this architecture
 - See `docs/vinyl-streaming.md` and
   `home-ops/services/home-assistant/vinyl.md`
+
+## Sonos
+- Spotify is linked as a music service in the Sonos app, so the speaker holds a
+  real queue and `media_play` resumes it at its saved position. Measured on
+  2026-08-05: a 50-track queue restarted at position 2 out of a state Home
+  Assistant reported as `idle` with no title and no content id.
+- A Spotify Connect session masks that queue instead of replacing it. While it
+  owns the speaker `queue_size` reads 1 and `media_content_id` is an
+  `x-sonos-vli:` session handle, which is a session and not a track, so nothing
+  can replay it. The queue reappears once the session ends.
+- Pad 65 therefore fires whatever Home Assistant reports, because
+  `PLAYERS_WITH_DEVICE_QUEUE` exempts the Sonos from the emptiness check that
+  still protects the Music Assistant players from their bare HTTP 500.
 
 ## TV
 - Pad 58 powers the television off through `google_assistant_sdk`, which is

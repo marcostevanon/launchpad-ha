@@ -234,7 +234,7 @@ class LEDManager:
             # An idle speaker with an empty queue cannot be played or paused,
             # so it belongs with the unreachable pads rather than looking
             # exactly like one that is merely paused.
-            if not media_player_is_actionable(state_data):
+            if not media_player_is_actionable(entity_id, state_data):
                 return UNAVAILABLE_COLOR, 0
             return OFF_COLOR, 0
 

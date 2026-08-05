@@ -30,10 +30,6 @@ BUTTON_MAP: dict[int, str] = {
     # Kept contiguous under the scenes so there is no gap in the middle of the
     # board; a row briefly held the living room TV and was removed, since the
     # only thing worth having from it was the power-off now on pad 58.
-    # Pad 65 is refused while the Sonos reports an empty queue, so this one
-    # calls media_play instead, which resumes the queue the speaker keeps on
-    # its own side.
-    64: "script.sonos_resume",
     65: "media_player.living_room_sonos",
     66: "volume_down.media_player.living_room_sonos",
     67: "volume_up.media_player.living_room_sonos",
@@ -99,6 +95,17 @@ COLOR_LAB_BUTTON_CC = 98
 # draw. Keep the mechanism, it earns its place the moment another pad calls a
 # script whose target can be absent.
 PAD_AVAILABILITY: dict[int, str] = {}
+
+# Players whose queue lives on the device rather than in the integration.
+#
+# Home Assistant blanks media_title and media_content_id on a Sonos that is not
+# playing, while the speaker still holds its queue and resumes it on media_play.
+# The same blank attributes on a Music Assistant player mean the queue really is
+# gone and a press can only return HTTP 500, so the emptiness check applies
+# there and not here.
+PLAYERS_WITH_DEVICE_QUEUE: frozenset[str] = frozenset(
+    {"media_player.living_room_sonos"}
+)
 
 # Special Buttons
 IDLE_MODE_BUTTON_ID = 68

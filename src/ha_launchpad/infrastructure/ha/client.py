@@ -7,6 +7,7 @@ import requests
 from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
 
+from ha_launchpad.config.mapping import PLAYERS_WITH_DEVICE_QUEUE
 from ha_launchpad.config.settings import (
     HA_REQUEST_MAX_DELAY,
     VOLUME_STEP,
@@ -34,7 +35,7 @@ class HomeAssistantUnauthorized(Exception):
     """The token was rejected. No amount of retrying will fix it."""
 
 
-def media_player_is_actionable(state_data: dict[str, Any]) -> bool:
+def media_player_is_actionable(entity_id: str, state_data: dict[str, Any]) -> bool:
     """Whether pressing this player's pad can achieve anything at all.
 
     `media_play_pause` operates on media that is already loaded. The Music
@@ -47,6 +48,9 @@ def media_player_is_actionable(state_data: dict[str, Any]) -> bool:
     So a bathroom speaker sitting idle with nothing queued cannot be played,
     paused, or woken. Rather than firing a call that can only fail, report
     that up front and let the pad show it.
+
+    A player in PLAYERS_WITH_DEVICE_QUEUE is exempt, because the emptiness this
+    reads is Home Assistant's rather than the speaker's.
     """
     state = state_data.get("state")
     attributes = state_data.get("attributes") or {}
@@ -57,6 +61,9 @@ def media_player_is_actionable(state_data: dict[str, Any]) -> bool:
     if state == "off":
         # A TV can usually be woken; a speaker usually cannot.
         return bool(attributes.get("supported_features", 0) & MEDIA_PLAYER_TURN_ON)
+
+    if entity_id in PLAYERS_WITH_DEVICE_QUEUE:
+        return True
 
     # idle, standby, on: only resumable if something is actually loaded.
     return bool(attributes.get("media_content_id") or attributes.get("media_title"))
@@ -246,7 +253,7 @@ class HomeAssistantClient:
             logger.debug("Media player %s is unavailable - nothing to do", entity_id)
             return True
 
-        if not media_player_is_actionable(state_data or {}):
+        if not media_player_is_actionable(entity_id, state_data or {}):
             logger.debug(
                 "Media player %s is %s with nothing loaded - not calling",
                 entity_id,
