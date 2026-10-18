@@ -10,10 +10,8 @@ BUTTON_MAP: dict[int, str] = {
     71: "switch.living_room_bulbs_string",
     72: "light.living_room_lamp",
     73: "switch.living_room_neon",
-    # Powers the strip the vinyl rig hangs off, the Raspberry Pi included.
-    # Was `switch.humidifier` on pad 63 in the bedroom block: same Tapo P110,
-    # moved to the living room and given a new job.
-    74: "switch.vinyl",
+    # No pad for `switch.vinyl`: it cuts the Raspberry Pi's power without a
+    # shutdown, and a stray press on pad 74 did exactly that.
     # bedroom
     61: "light.bulb_bedroom",
     62: "light.bedroom_lamp",

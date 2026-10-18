@@ -10,8 +10,9 @@ Sony PS-313 FA  →  amplifier  →  PCM2902 USB ADC  →  Raspberry Pi 3 B (192
                                               Sonos SYMFONISK Bookshelf
 ```
 
-The turntable starts and stops the Sonos by itself. Pad **74** (`switch.vinyl`, a
-Tapo P110) powers the rig, and it is the only vinyl pad left on the board.
+The turntable starts and stops the Sonos by itself. `switch.vinyl`, a Tapo P110,
+powers the rig, the Raspberry Pi included, and no pad drives it: switching it off
+cuts the Pi's power without a shutdown.
 
 Home Assistant's side of this, the threshold and the measurements behind it, is
 in `home-ops/services/home-assistant/vinyl.md`. What follows is the Pi.
@@ -81,11 +82,11 @@ bytes, so fewer kbps means those bytes cover *more* seconds.
 
 Two things that look like levers and are not:
 
-- **FLAC or WAV to the Sonos.** Sonos never sees the Pi's URL; MA re-encodes and
+- Sending FLAC or WAV to the Sonos changes nothing. Sonos never sees the Pi's URL; MA re-encodes and
   serves its own, and `providers/sonos/player.py` forces AAC for duration-less
   streams with the comment *"Sonos really does not support FLAC streams without
   duration"*. Optimise the Pi→MA hop, not MA→Sonos.
-- **Ethernet instead of WiFi.** On a Pi 3 the NIC hangs off the same USB
+- Ethernet would not beat WiFi here. On a Pi 3 the NIC hangs off the same USB
   controller as the audio codec. Measured WiFi is −45 dBm with 0% loss, and
   there are no xruns or USB resets in any boot, so there is nothing to fix.
 
