@@ -5,17 +5,17 @@ A utility that connects a Novation Launchpad to Home Assistant. Button presses t
 ## Features
 
 - Bidirectional control: Launchpad buttons control Home Assistant entities, and entity states update Launchpad LEDs
-- Configurable button mapping to any Home Assistant entity (lights, switches, scenes, scripts, media players, plants)
+- Configurable button mapping to any Home Assistant entity (lights, switches, scenes, scripts, media players, plants), and binary sensors as status pads that only report
 - Colour picker and brightness picker, entered by holding a light's pad
-- Colour lab: the device's whole 128-colour palette on the board, logging what you press, so pad colours are chosen on the hardware instead of off a screen — see [`docs/colour-lab.md`](docs/colour-lab.md)
+- Colour lab: the device's whole 128-colour palette on the board, logging what you press, so pad colours are chosen on the hardware instead of off a screen (see [`docs/colour-lab.md`](docs/colour-lab.md))
 - Disco mode for automated light shows on configured spotlights
-- Standby mode: the board sleeps after inactivity, and changes made elsewhere in the house light the affected pads for a couple of minutes without waking it
+- Standby mode: the board sleeps after inactivity, pads that need attention (a plant with a problem, a status pad that is on) stay lit, and changes made elsewhere in the house light the affected pads for a couple of minutes without waking it
 - Launchpad rotation support (0°, 90°, 180°, 270°)
 - Automatic reconnection to the Launchpad and to Home Assistant
 
 ## Prerequisites (macOS)
 
-- [uv](https://docs.astral.sh/uv/) — manages both the Python interpreter and the dependencies
+- [uv](https://docs.astral.sh/uv/), which manages both the Python interpreter and the dependencies
 - Novation Launchpad (Mini MK3 tested)
 
 ```bash
@@ -35,7 +35,7 @@ HA_TOKEN=your_long_lived_home_assistant_token_here
 
 Create the token in Home Assistant under your profile → Security → Long-lived access tokens.
 
-Everything else in `.env.example` is optional and documented inline. The button mapping lives in [`src/ha_launchpad/config/mapping.py`](src/ha_launchpad/config/mapping.py) — edit `BUTTON_MAP` to map pad numbers to entities.
+Everything else in `.env.example` is optional and documented inline. The button mapping lives in [`src/ha_launchpad/config/mapping.py`](src/ha_launchpad/config/mapping.py): edit `BUTTON_MAP` to map pad numbers to entities.
 
 Pads are numbered `row * 10 + column`, with row 1 at the bottom left, so the 8×8 grid runs 11–88.
 
@@ -81,12 +81,12 @@ with `[Errno 65] No route to host` while Home Assistant is plainly reachable.
 
 Two things make this confusing, so they are worth knowing up front:
 
-- **Testing over SSH will not reveal it.** An SSH session inherits `sshd`'s
+- Testing over SSH will not reveal it. An SSH session inherits `sshd`'s
   grant, so the same check passes there and fails under launchd. `deploy.sh`
   therefore runs its self-test as a transient launchd agent, not over the SSH
   connection.
-- The path above is **shared by every release** — each release's virtualenv
-  symlinks to that one interpreter — so this is approved once, not per deploy.
+- The path above is **shared by every release** (each release's virtualenv
+  symlinks to that one interpreter), so this is approved once, not per deploy.
   Changing Python version means approving again.
 
 ### One-time: secrets and uv
@@ -116,7 +116,7 @@ Each deploy creates an immutable release with its own virtualenv, builds and sel
 └── current -> releases/...
 ```
 
-Health is judged on the application's heartbeat file carrying the new release id — proof it reached Home Assistant and opened the Launchpad, which `launchctl print` cannot tell you. If it does not become healthy, the symlink flips back to the previous release and the deploy exits non-zero.
+Health is judged on the application's heartbeat file carrying the new release id: proof it reached Home Assistant and opened the Launchpad, which `launchctl print` cannot tell you. If it does not become healthy, the symlink flips back to the previous release and the deploy exits non-zero.
 
 To roll back by hand, point `current` at an older release and restart:
 
@@ -132,18 +132,18 @@ Only tracked files are shipped, so `.git`, `.venv` and `.env` never reach the se
 ## Project structure
 
 - `src/ha_launchpad/`
-  - `cli.py` — entry point (`ha-launchpad`), also `--selftest`
-  - `config/` — `settings.py` (environment) and `mapping.py` (pads, colours, palettes)
-  - `core/controller.py` — orchestration, threads, MIDI event loop
-  - `core/logic/` — LED manager, input handler, feedback, idle/standby
-  - `features/` — colour picker, disco mode
-  - `infrastructure/midi/` — `MidiBackend` interface, mido backend, rotation decorator, mock backend
-  - `infrastructure/ha/` — Home Assistant HTTP client
-  - `utils/rotate_pad.py` — pad rotation maths
-- `scripts/dev.sh` — local run loop, restarts on every commit
-- `scripts/deploy.sh` — atomic versioned deploy
-- `packaging/` — LaunchAgent plist template and the `bin/run` wrapper
-- `tests/` — unit and integration tests
+  - `cli.py`: entry point (`ha-launchpad`), also `--selftest`
+  - `config/`: `settings.py` (environment) and `mapping.py` (pads, colours, palettes)
+  - `core/controller.py`: orchestration, threads, MIDI event loop
+  - `core/logic/`: LED manager, input handler, feedback, idle/standby
+  - `features/`: colour picker, disco mode
+  - `infrastructure/midi/`: `MidiBackend` interface, mido backend, rotation decorator, mock backend
+  - `infrastructure/ha/`: Home Assistant HTTP client
+  - `utils/rotate_pad.py`: pad rotation maths
+- `scripts/dev.sh`: local run loop, restarts on every commit
+- `scripts/deploy.sh`: atomic versioned deploy
+- `packaging/`: LaunchAgent plist template and the `bin/run` wrapper
+- `tests/`: unit and integration tests
 
 ## Logging
 
@@ -162,7 +162,7 @@ Set `LOG_LEVEL=DEBUG` for verbose output, or `LOG_FILE=` (empty) to log to stder
 - `mido`: high-level MIDI library with convenient message objects
 - `python-rtmidi`: binds the native RtMidi C++ library for hardware access on macOS
 
-The Launchpad is put into Programmer Mode at startup and handed back to Live Mode on shutdown — Programmer Mode disables the device's own Setup menu, so leaving it there would require a power cycle to undo.
+The Launchpad is put into Programmer Mode at startup and handed back to Live Mode on shutdown. Programmer Mode disables the device's own Setup menu, so leaving it there would require a power cycle to undo.
 
 ## Future plans
 

@@ -43,6 +43,9 @@ BUTTON_MAP: dict[int, str] = {
     # google_assistant_sdk so Google tells the dongle to emit an HDMI-CEC
     # standby -- the same path as saying it out loud. See docs/tv-power-off.md.
     58: "script.tv_off",
+    # status -- binary sensors only report, see READ_ONLY_DOMAINS. Pad 16 is also
+    # the second half of the restart chord, which still needs 15 pressed first.
+    16: "binary_sensor.neighbour_home",
     # plants
     17: "plant.monstera",
     18: "plant.pothos",

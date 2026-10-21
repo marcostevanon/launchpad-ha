@@ -30,6 +30,12 @@ OFF_COLOR = "gray_3"
 # unreachable now differ in hue as well as brightness.
 UNAVAILABLE_COLOR = "taupe"
 
+# A status pad whose entity is on: the thing it reports needs attention, so it
+# also stays lit on a sleeping board. Picked on the hardware in the colour lab
+# on 2026-10-21; velocity 57 reads as violet on the pad, whatever its name says.
+# Off is OFF_COLOR, the same grey as a light that is switched off.
+STATUS_ON_COLOR = "pink_2"
+
 
 class LEDManager:
     def __init__(
@@ -47,7 +53,7 @@ class LEDManager:
         self._missing_entities: set[str] = set()
         self._last_state: dict[int, str] = {}
         self._warned_no_states = False
-        # Pads reporting a problem, as (note, colour, channel). Kept even on a
+        # Pads that need attention, as (note, colour, channel). Kept even on a
         # dry run so the sleeping board can hold them lit.
         self._notification_pads: list[tuple[int, str, int]] = []
         # Pads whose entity could not be reached at the last poll. Pressing one
@@ -103,9 +109,7 @@ class LEDManager:
             else:
                 self._unavailable_notes.discard(note)
 
-            # Check for notification condition (Plant problem = red pulse/color)
-            if channel == 2 and "plant." in entity_id:
-                # Plant problem is reported on the pulsing channel
+            if self._needs_attention(entity_id, color, channel):
                 has_notifications = True
                 # Recorded per pad, not just as a flag: a sleeping board keeps
                 # these lit, so it needs to know which ones and in what colour.
@@ -132,12 +136,27 @@ class LEDManager:
 
     @property
     def notification_pads(self) -> list[tuple[int, str, int]]:
-        """Pads currently reporting a problem, as (note, colour, channel).
+        """Pads that currently need attention, as (note, colour, channel).
 
         Populated on every update_all, dry run included, because the sleeping
         board relies on it precisely when nothing is being painted normally.
         """
         return list(self._notification_pads)
+
+    @staticmethod
+    def _needs_attention(entity_id: str, color: str, channel: int) -> bool:
+        """Whether this pad, painted as it is, stays lit on a sleeping board.
+
+        Decided on the colour the pad actually got, so a pad greyed out because
+        its entity is unreachable never counts.
+        """
+        domain = entity_id.split(".", 1)[0]
+        if domain == "plant":
+            # A plant reports its problem on the pulsing channel.
+            return channel == 2
+        if domain == "binary_sensor":
+            return color == STATUS_ON_COLOR
+        return False
 
     def _dependency_is_up(self, note: int, state_map: dict[str, Any]) -> bool:
         """Whether the thing this pad quietly depends on is actually there.
@@ -237,6 +256,9 @@ class LEDManager:
             if not media_player_is_actionable(entity_id, state_data):
                 return UNAVAILABLE_COLOR, 0
             return OFF_COLOR, 0
+
+        if domain == "binary_sensor":
+            return (STATUS_ON_COLOR if state == "on" else OFF_COLOR), 0
 
         if domain == "plant":
             problem = state_data.get("attributes", {}).get("problem", "unknown")

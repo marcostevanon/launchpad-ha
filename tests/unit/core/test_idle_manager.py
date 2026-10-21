@@ -186,3 +186,26 @@ def test_sync_ignores_the_wake_button(idle_manager):
 
     idle_manager.sync_notification_pads([(IDLE_MODE_BUTTON_ID, "red_2", 2)])
     idle_manager.backend.send_note.assert_not_called()
+
+
+def test_press_on_a_held_pad_puts_its_colour_back(idle_manager):
+    """Nothing else repaints a held pad until its condition changes, so a touch
+    that left it dark would leave it dark for hours."""
+    idle_manager.backend.is_connected.return_value = True
+    idle_manager.enter_idle()
+    idle_manager.sync_notification_pads([(16, "pink_2", 0)])
+    idle_manager.backend.send_note.reset_mock()
+
+    idle_manager.restore_pad(16)
+
+    idle_manager.backend.send_note.assert_called_once_with(16, "pink_2", 0)
+
+
+def test_press_on_any_other_sleeping_pad_leaves_it_dark(idle_manager):
+    idle_manager.backend.is_connected.return_value = True
+    idle_manager.enter_idle()
+    idle_manager.backend.send_note.reset_mock()
+
+    idle_manager.restore_pad(81)
+
+    idle_manager.backend.send_note.assert_called_once_with(81, "off")

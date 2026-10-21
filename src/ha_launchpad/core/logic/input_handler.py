@@ -9,7 +9,10 @@ from ha_launchpad.config.mapping import (
 )
 from ha_launchpad.features.color_picker import ColorPicker
 from ha_launchpad.features.disco import DiscoMode
-from ha_launchpad.infrastructure.ha.client import HomeAssistantClient
+from ha_launchpad.infrastructure.ha.client import (
+    READ_ONLY_DOMAINS,
+    HomeAssistantClient,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -84,7 +87,7 @@ class InputHandler:
             self.ha_client.volume_down(entity_id.split(".", 1)[1])
             return {}
 
-        if entity_id.startswith("plant."):
+        if entity_id.split(".", 1)[0] in READ_ONLY_DOMAINS:
             return {}
 
         # 4. Standard Toggle

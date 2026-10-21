@@ -80,13 +80,12 @@ possible and "move what is playing" is not. Installing the core `spotify`
 integration answers this in two minutes.
 
 ## Small features worth having
-- A `status.<entity>` mapping form: press does nothing, the LED reflects state.
-  The plant pads already work this way as a hardcoded special case. Would
-  unlock low battery (`sensor.switch_bedroom_battery` is at 10%), the vinyl
-  plug being overloaded, pending updates, shopping list.
+- More status pads: low battery (`sensor.switch_bedroom_battery` is at 10%),
+  the vinyl plug being overloaded, pending updates, shopping list. Each needs a
+  template `binary_sensor` in Home Assistant; the board already shows any binary
+  sensor as a status pad.
 - `button.press` support, for things like "save the current track".
 - `next.` / `prev.` for the Sonos, which supports both.
-- Generalise the standby notification indicator beyond plants.
 
 ## Error handling
 - Show a status pad that lights when a command produced an error
@@ -165,6 +164,10 @@ integration answers this in two minutes.
 - Notification indicator on the wake button
 - Changes elsewhere in the house light the affected pads for a couple of
   minutes without waking the board
+- A `binary_sensor` pad is a status pad: violet when on, grey when off, inert
+  when pressed, and held lit through sleep like a plant with a problem. Pad 16
+  shows whether the neighbour is home
+- A press on a sleeping board repaints a pad held lit instead of leaving it dark
 
 ## Launchpad connection
 - Exits non-zero when the Launchpad cannot be found, so the service manager

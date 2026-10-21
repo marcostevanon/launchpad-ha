@@ -30,6 +30,10 @@ RETRYABLE_STATUSES = (408, 429, 500, 502, 503, 504)
 # remotely, and calling the service on one that cannot just fails.
 MEDIA_PLAYER_TURN_ON = 128
 
+# Domains Home Assistant offers no toggle for. Their pads only report state, and
+# a press on one has nothing to call.
+READ_ONLY_DOMAINS = frozenset({"plant", "binary_sensor"})
+
 
 class HomeAssistantUnauthorized(Exception):
     """The token was rejected. No amount of retrying will fix it."""

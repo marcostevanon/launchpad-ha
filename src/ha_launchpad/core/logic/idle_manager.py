@@ -44,10 +44,11 @@ class IdleManager:
     def sync_notification_pads(self, pads: Iterable[tuple[int, str, int]]) -> None:
         """Hold the pads that need attention lit while the board sleeps.
 
-        A plant below its moisture threshold is worth seeing on a dark board,
-        and it is worth seeing on the pad that owns it rather than as a single
-        summary light somewhere else. These pads survive the sleep blackout and
-        ignore the standby preview timer; they go out when the problem does.
+        A plant below its moisture threshold, or a status pad that is on, is
+        worth seeing on a dark board, and on the pad that owns it rather than as
+        a single summary light somewhere else. These pads survive the sleep
+        blackout and ignore the standby preview timer; they go out when the
+        condition does.
         """
         if not self.backend.is_connected():
             return
@@ -72,6 +73,25 @@ class IdleManager:
             self._preview_deadlines.pop(note, None)
 
         self._notification_pads = wanted
+
+    def restore_pad(self, note: int) -> None:
+        """Repaint what the sleeping board shows on a pad that was just pressed.
+
+        A press on a sleeping board does nothing. Most pads are sent dark, which
+        is what a sleeping board shows. A pad held lit is repainted instead,
+        because nothing else repaints it until its condition changes, which for
+        a status pad can be hours.
+        """
+        if not self.backend.is_connected():
+            return
+
+        held = self._notification_pads.get(note)
+        if held is None:
+            self.backend.send_note(note, "off")
+            return
+
+        color, channel = held
+        self.backend.send_note(note, color, channel)
 
     def check_status(self):
         """Check if we should enter idle mode based on timeout."""

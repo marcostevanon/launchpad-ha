@@ -251,8 +251,7 @@ class LaunchpadController:
                 # Restore LEDs immediately
                 self.update_led_states(force=True)
             else:
-                # Glitch Fix: Explicitly turn off stray presses
-                self.backend.send_note(note, "off")
+                self.idle_manager.restore_pad(note)
             # Ignore other actions when idle
             return
 

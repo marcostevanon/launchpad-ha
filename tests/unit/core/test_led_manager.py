@@ -6,6 +6,7 @@ from ha_launchpad.config.mapping import COLORS
 from ha_launchpad.config.palette import PALETTE_HEX
 from ha_launchpad.core.logic.led_manager import (
     OFF_COLOR,
+    STATUS_ON_COLOR,
     UNAVAILABLE_COLOR,
     LEDManager,
 )
@@ -404,3 +405,53 @@ def test_unreachable_is_dimmer_than_merely_switched_off():
         return 0.2126 * r + 0.7152 * g + 0.0722 * b
 
     assert luminance(UNAVAILABLE_COLOR) < luminance(OFF_COLOR)
+
+
+@pytest.fixture
+def status_manager():
+    disco = MagicMock()
+    disco.active = False
+    return LEDManager(
+        MagicMock(), MagicMock(), {16: "binary_sensor.neighbour_home"}, disco
+    )
+
+
+def _status(state):
+    return [
+        {"entity_id": "binary_sensor.neighbour_home", "state": state, "attributes": {}}
+    ]
+
+
+@pytest.mark.parametrize(
+    ("state", "color"),
+    [("on", STATUS_ON_COLOR), ("off", OFF_COLOR), ("unavailable", UNAVAILABLE_COLOR)],
+)
+def test_status_pad_colour_follows_its_sensor(status_manager, state, color):
+    status_manager.ha_client.get_all_states.return_value = _status(state)
+
+    changes, _ = status_manager.update_all(dry_run=False)
+
+    assert changes == [(16, color, 0)]
+
+
+def test_status_pad_that_is_on_stays_lit_through_sleep(status_manager):
+    status_manager.ha_client.get_all_states.return_value = _status("on")
+
+    _, has_notifications = status_manager.update_all(dry_run=True)
+
+    assert has_notifications
+    assert status_manager.notification_pads == [(16, STATUS_ON_COLOR, 0)]
+
+
+@pytest.mark.parametrize("state", ["off", "unavailable"])
+def test_status_pad_that_is_not_on_goes_dark_with_the_board(status_manager, state):
+    status_manager.ha_client.get_all_states.return_value = _status(state)
+
+    _, has_notifications = status_manager.update_all(dry_run=True)
+
+    assert not has_notifications
+    assert status_manager.notification_pads == []
+
+
+def test_status_colour_is_a_named_palette_entry():
+    assert STATUS_ON_COLOR in COLORS
